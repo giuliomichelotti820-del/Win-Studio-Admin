@@ -1,7 +1,7 @@
 {
   "name": "win-studio-admin",
   "productName": "Win Studio Admin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Applicazione desktop Windows 10/11 per la gestione delle segnalazioni (ticket) e dell'operativita dello Studio Associato Amm. Burchielli.",
   "author": "Studio Associato Amm. Burchielli",
