@@ -153,10 +153,41 @@ async function richiesta(metodo, percorso, corpo, opzioni = {}) {
 
 /* --- Autenticazione ----------------------------------------------------- */
 
+function nomeDispositivo() {
+  return `${require("node:os").hostname()} (Windows)`;
+}
+
+/**
+ * Accesso.
+ *
+ * L'app si dichiara `client: "desktop"` e allega la chiave dell'applicazione:
+ * se il Worker ha lo stesso segreto in DESKTOP_APP_KEY risponde subito con il
+ * token, senza il codice a sei cifre. Altrimenti — chiave non configurata da
+ * una delle due parti, oppure account condomino — risponde `otpRequired` e si
+ * prosegue come sul sito. La differenza la decide il server: qui si chiede e
+ * basta, e si e pronti a entrambe le risposte.
+ */
 async function login(email, password) {
-  // Primo passo: password. Il Worker non apre la sessione qui, manda un codice
-  // a 6 cifre via email e restituisce un "ticket" che identifica il tentativo.
-  return chiamata("POST", "/api/auth/login", { body: { email, password } });
+  const sessione = store.getSessione();
+  const chiave = String(store.getImpostazioni().chiaveApp || "");
+
+  const dati = await chiamata("POST", "/api/auth/login", {
+    headers: chiave ? { "X-App-Key": chiave } : {},
+    body: {
+      email,
+      password,
+      client: "desktop",
+      deviceId: sessione.deviceId,
+      deviceName: nomeDispositivo()
+    }
+  });
+
+  // Accesso diretto concesso: la sessione e gia aperta, non c'e nessun codice
+  // da chiedere a chi sta davanti allo schermo.
+  if (dati && dati.token) {
+    store.salvaSessione(dati.token, { id: dati.id, email: dati.email, fullName: dati.fullName, role: dati.role });
+  }
+  return dati;
 }
 
 async function verificaOtp(ticket, codice) {
@@ -165,9 +196,9 @@ async function verificaOtp(ticket, codice) {
     body: {
       ticket,
       code: codice,
-      client: "mobile",
+      client: "desktop",
       deviceId: sessione.deviceId,
-      deviceName: `${require("node:os").hostname()} (Windows)`
+      deviceName: nomeDispositivo()
     }
   });
   if (!dati || !dati.token) throw new ApiError("Il server non ha restituito un token di sessione.", 500);

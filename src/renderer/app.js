@@ -20,6 +20,7 @@ const SEZIONI = [
   { id: "posta", titolo: "Posta in arrivo", icona: "✉", modulo: () => import("./views/posta.js") },
   { id: "notifiche", titolo: "Notifiche", icona: "🔔", modulo: () => import("./views/notifiche.js") },
   { id: "studio", titolo: "Studio", icona: "👥", modulo: () => import("./views/staff.js") },
+  { id: "controllo", titolo: "Controllo", icona: "🛡", modulo: () => import("./views/controllo.js") },
   { id: "impostazioni", titolo: "Impostazioni", icona: "⚙", modulo: () => import("./views/impostazioni.js") }
 ];
 
@@ -59,6 +60,8 @@ function schermataAccesso(messaggio) {
       errore.textContent = esito.errore;
       return;
     }
+    // Il server decide: o manda il codice a sei cifre, o apre subito la
+    // sessione perche riconosce l'app dello Studio (chiave dell'applicazione).
     if (esito.dati && esito.dati.otpRequired) {
       schermataCodice(esito.dati);
       return;
@@ -79,7 +82,7 @@ function schermataAccesso(messaggio) {
       el("label", { class: "campo-etichetta" }, [el("span", { text: "Password" }), password]),
       errore,
       bottone,
-      el("p", { class: "sotto", text: "Sono le stesse credenziali dell'area riservata del sito. Dopo la password arriva un codice via email." })
+      el("p", { class: "sotto", text: "Sono le stesse credenziali dell'area riservata del sito. Se questo computer e riconosciuto come postazione dello Studio si entra subito; altrimenti arriva un codice via email." })
     ])
   ]));
 
@@ -266,6 +269,10 @@ function apriPalette() {
     { etichetta: "Coda: non assegnate", azione: () => naviga("coda", { status: "aperte", assegnate: "nessuno" }) },
     { etichetta: "Coda: assegnate a me", azione: () => naviga("coda", { status: "aperte", assegnate: "mie" }) },
     { etichetta: "Coda: arrivate dal modulo contatti", azione: () => naviga("coda", { status: "aperte", channel: "contatto" }) },
+    { etichetta: "Controllo: sessioni attive", azione: () => naviga("controllo", { scheda: "sessioni" }) },
+    { etichetta: "Controllo: attivita dello staff", azione: () => naviga("controllo", { scheda: "attivita" }) },
+    { etichetta: "Controllo: credenziali dipendenti", azione: () => naviga("controllo", { scheda: "dipendenti" }) },
+    { etichetta: "Controllo: credenziali condomini", azione: () => naviga("controllo", { scheda: "condomini" }) },
     { etichetta: "Aggiorna le notifiche adesso", azione: () => window.studio.aggiornaNotifiche() },
     { etichetta: "Esci dall'account", azione: async () => { await window.studio.logout(); location.reload(); } }
   ];

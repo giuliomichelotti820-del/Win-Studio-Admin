@@ -9,6 +9,7 @@ export default async function monta(radice, ctx) {
   const impostazioni = ctx.impostazioni;
 
   const indirizzo = el("input", { class: "campo largo", value: impostazioni.baseUrl });
+  const chiaveApp = el("input", { class: "campo largo", type: "password", value: impostazioni.chiaveApp || "", placeholder: "vuota: il codice via email viene sempre chiesto" });
   const ritmo = el("input", { class: "campo largo", type: "number", min: "15", max: "600", value: String(impostazioni.pollSeconds) });
   const notifiche = el("input", { type: "checkbox", checked: impostazioni.notificheDesktop });
   const minimizzato = el("input", { type: "checkbox", checked: impostazioni.avvioMinimizzato });
@@ -23,6 +24,10 @@ export default async function monta(radice, ctx) {
   radice.appendChild(el("section", { class: "riquadro stretto" }, [
     el("h2", { text: "Collegamento" }),
     el("label", { class: "campo-etichetta" }, [el("span", { text: "Indirizzo del server" }), indirizzo]),
+    el("label", { class: "campo-etichetta" }, [
+      el("span", { text: "Chiave dell'applicazione (accesso senza codice via email)" }), chiaveApp
+    ]),
+    el("p", { class: "sotto", text: "Deve coincidere con il segreto DESKTOP_APP_KEY del server. Quando coincide, da questo computer si entra con sole email e password; lasciata vuota, l'accesso chiede il codice a sei cifre come sul sito." }),
     el("label", { class: "campo-etichetta" }, [el("span", { text: "Aggiornamento notifiche (secondi)" }), ritmo]),
     el("h2", { text: "Aspetto e comportamento" }),
     el("label", { class: "campo-etichetta" }, [el("span", { text: "Densita dell'elenco" }), densita]),
@@ -34,6 +39,7 @@ export default async function monta(radice, ctx) {
       onclick: async () => {
         await window.studio.impostazioni({
           baseUrl: indirizzo.value.trim().replace(/\/+$/, ""),
+          chiaveApp: chiaveApp.value.trim(),
           pollSeconds: Math.max(15, Number(ritmo.value) || 45),
           notificheDesktop: notifiche.checked,
           avvioMinimizzato: minimizzato.checked,

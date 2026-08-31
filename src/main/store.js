@@ -22,6 +22,10 @@ const { app, safeStorage } = require("electron");
 
 const DEFAULTS = {
   baseUrl: "https://sitoamm.giuliomichelotti820.workers.dev",
+  // Chiave dell'applicazione: quando coincide con il segreto DESKTOP_APP_KEY
+  // del Worker, l'accesso dall'app salta il codice a sei cifre. Vuota, il
+  // codice viene chiesto come sul sito.
+  chiaveApp: "",
   pollSeconds: 45,
   notificheDesktop: true,
   avvioMinimizzato: false,

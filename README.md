@@ -27,6 +27,7 @@ qui si vede subito nell'area riservata, e viceversa.
 | **Posta in arrivo** | Diario del riconoscimento automatico delle email e apertura manuale delle pratiche scartate. |
 | **Notifiche** | Le stesse notifiche dell'area riservata, con salto diretto alla pratica. |
 | **Studio** | Account dipendente, invio email dallo Studio, invito clienti (solo titolare). |
+| **Controllo** | Solo titolare: sessioni aperte in tempo reale, attività di ogni dipendente, credenziali di dipendenti e condomini, diario completo. |
 
 ## Pensata per il volume
 
@@ -40,9 +41,26 @@ qui si vede subito nell'area riservata, e viceversa.
 
 ## Accesso e sicurezza
 
-L'accesso è quello del sito: email, password e codice a sei cifre inviato per
-email. L'app apre una sessione del tipo che il Worker chiama `mobile`: token in
-`Authorization: Bearer`, identificativo del dispositivo in `X-Device-Id`.
+L'accesso è quello del sito: stesse email e stesse password. L'app apre una
+sessione che si dichiara `desktop`: token in `Authorization: Bearer`,
+identificativo del dispositivo in `X-Device-Id`, durata 30 giorni rinnovata a
+ogni uso.
+
+### Accesso senza codice a sei cifre
+
+Su questo computer il codice via email si può saltare, ma non basta che sia
+l'app a chiederlo — chiunque potrebbe dichiararsi tale. Il salto vale solo se
+combaciano tre cose: la **chiave dell'applicazione** (Impostazioni →
+Collegamento) uguale al segreto `DESKTOP_APP_KEY` del Worker, un
+identificativo di dispositivo valido, e un account dipendente o titolare. In
+quel caso il server risponde subito con il token e si entra con sole email e
+password.
+
+Il secondo fattore non sparisce: da "un codice sulla tua casella" diventa
+"questo computer, con l'app e la sua chiave". Chi ruba solo la password non
+entra da nessun'altra parte, e cancellando il segreto sul Worker la scorciatoia
+si chiude per tutti al primo accesso successivo. Con la chiave vuota — la
+condizione predefinita — l'app chiede il codice come il sito.
 
 - Il token è cifrato con DPAPI di Windows (`safeStorage`) e leggibile solo
   dall'account Windows che ha fatto l'accesso. Se la cifratura non è
@@ -57,6 +75,28 @@ email. L'app apre una sessione del tipo che il Worker chiama `mobile`: token in
   usano.
 - Le sessioni aperte si vedono e si revocano da **Impostazioni → Dispositivi
   collegati**.
+
+## Pannello di controllo (solo titolare)
+
+Chi entra con l'account `super_admin` trova una sezione in più:
+
+- **Sessioni attive** — chi sta lavorando adesso, da quale computer (browser,
+  app Android, app Windows), da quanto è aperta la sessione e quando è stata
+  l'ultima attività. Ogni riga si può chiudere.
+- **Attività dello staff** — per ciascun dipendente, sul periodo scelto:
+  accessi (e quanti dall'app), tentativi falliti, risposte scritte, note
+  interne, cambi di stato, chiusure, pratiche in carico e sessioni vive. Sotto,
+  gli ultimi eventi in ordine di tempo.
+- **Credenziali dipendenti** — creazione account, cambio ruolo, attivazione e
+  disattivazione, sblocco dopo troppi tentativi, nuova password (proposta già
+  conforme alle regole del server).
+- **Credenziali condomini** — stesse operazioni sugli account dei condomini,
+  con ricerca per nome o email e i condomini di appartenenza in chiaro.
+- **Diario completo** — il registro dello Studio, filtrabile per periodo,
+  persona e testo.
+
+Reimpostare una password chiude tutte le sessioni di quell'account, e ogni
+operazione delicata resta nel diario con il nome di chi l'ha fatta.
 
 ## Archivio: che cosa sta dove
 

@@ -223,7 +223,12 @@ ipcMain.handle("app:stato", () => {
   };
 });
 
-ipcMain.handle("auth:login", (_e, { email, password }) => risultato(api.login(email, password)));
+ipcMain.handle("auth:login", (_e, { email, password }) => risultato(api.login(email, password).then((dati) => {
+  // Accesso senza codice: la sessione e gia aperta, il controllo delle
+  // notifiche puo partire subito come dopo la verifica dell'OTP.
+  if (dati && dati.token) avviaPolling();
+  return dati;
+})));
 ipcMain.handle("auth:otp", (_e, { ticket, codice }) => risultato(api.verificaOtp(ticket, codice).then((dati) => {
   avviaPolling();
   return dati;
