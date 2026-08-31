@@ -32,7 +32,25 @@ const DEFAULTS = {
   densita: "compatta",
   tema: "sistema",
   ultimaVista: "coda",
+  ultimaEmail: "",
+  lateraleCompressa: false,
+
+  // Sicurezza della postazione: dopo N minuti senza tastiera ne mouse l'app si
+  // oscura e chiede di nuovo la password. 0 disattiva il blocco.
+  bloccoMinuti: 15,
+
+  // Silenzio: le notifiche di Windows restano ferme fuori dall'orario di
+  // lavoro o quando il "non disturbare" e acceso a mano.
+  nonDisturbare: false,
+  orarioLavoro: { attivo: false, inizio: "08:30", fine: "18:30", feriali: true },
+
+  // Registro locale delle attivita della postazione.
+  registroAttivo: true,
+
+  // Viste salvate della coda: filtri con un nome, richiamabili dal comando
+  // rapido. { id, nome, filtri }
   filtriSalvati: [],
+
   finestra: { width: 1440, height: 900, maximized: true }
 };
 

@@ -31,6 +31,7 @@ contextBridge.exposeInMainWorld("studio", {
   verificaOtp: (ticket, codice) => ipcRenderer.invoke("auth:otp", { ticket, codice }),
   reinviaOtp: (ticket) => ipcRenderer.invoke("auth:resend", { ticket }),
   logout: () => ipcRenderer.invoke("auth:logout"),
+  sblocca: (password) => ipcRenderer.invoke("auth:sblocca", { password }),
 
   get: (percorso) => ipcRenderer.invoke("api:richiesta", { metodo: "GET", percorso }),
   post: (percorso, corpo) => ipcRenderer.invoke("api:richiesta", { metodo: "POST", percorso, corpo }),
@@ -50,6 +51,16 @@ contextBridge.exposeInMainWorld("studio", {
   caricaDocumento: (dati) => ipcRenderer.invoke("documenti:carica", dati),
 
   impostazioni: (parziali) => ipcRenderer.invoke("settings:set", parziali),
+  esportaImpostazioni: () => ipcRenderer.invoke("impostazioni:esporta"),
+  importaImpostazioni: () => ipcRenderer.invoke("impostazioni:importa"),
+
+  annota: (voce) => ipcRenderer.invoke("registro:annota", voce),
+  registro: (filtri) => ipcRenderer.invoke("registro:leggi", filtri),
+  svuotaRegistro: () => ipcRenderer.invoke("registro:svuota"),
+
+  salvaTesto: (nomeFile, contenuto, titolo) => ipcRenderer.invoke("app:salva-testo", { nomeFile, contenuto, titolo }),
+  diagnostica: () => ipcRenderer.invoke("app:diagnostica"),
+  apriCartellaDati: () => ipcRenderer.invoke("app:apri-cartella-dati"),
   aggiornaNotifiche: () => ipcRenderer.invoke("app:notifiche-ora"),
   scarica: (percorso, nomeFile) => ipcRenderer.invoke("api:scarica", { percorso, nomeFile }),
   apriEsterno: (url) => ipcRenderer.invoke("app:apri-esterno", url),

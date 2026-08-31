@@ -28,6 +28,8 @@ qui si vede subito nell'area riservata, e viceversa.
 | **Notifiche** | Le stesse notifiche dell'area riservata, con salto diretto alla pratica. |
 | **Studio** | Account dipendente, invio email dallo Studio, invito clienti (solo titolare). |
 | **Controllo** | Solo titolare: sessioni aperte in tempo reale, attività di ogni dipendente, credenziali di dipendenti e condomini, diario completo. |
+| **Registro attività** | Che cosa è stato fatto **da questa postazione**: accessi riusciti e rifiutati, sblocchi, esportazioni, importazioni. Filtrabile ed esportabile. |
+| **Impostazioni** | Collegamento, sicurezza della postazione, orari degli avvisi, copia della configurazione, diagnostica. |
 
 ## Pensata per il volume
 
@@ -37,7 +39,26 @@ qui si vede subito nell'area riservata, e viceversa.
 - **Risposta senza mouse**: `Ctrl+Invio` invia al condomino, `Ctrl+Maiusc+Invio` salva una nota interna.
 - **Sempre viva**: la coda si aggiorna da sola in sottofondo e le notifiche arrivano come avvisi di Windows anche a finestra chiusa (l'app resta nell'area di notifica).
 - **Richiamo globale** `Ctrl+Alt+S` da qualunque programma: porta su l'app e apre il comando rapido.
-- `Ctrl+1`…`Ctrl+9` saltano direttamente alle sezioni.
+- `Ctrl+1`…`Ctrl+9` saltano direttamente alle sezioni, `Ctrl+B` comprime la barra laterale, `F1` mostra tutte le scorciatoie.
+- **Viste salvate**: i tagli della coda che si rifanno ogni giorno ("le mie urgenti", "in attesa da una settimana") si salvano con un nome e tornano nella tendina e nel comando rapido.
+- **Esportazione in CSV**: coda e registro finiscono in Excel con un clic, separatore e accenti già giusti per Excel italiano.
+
+## Interfaccia
+
+L'aspetto è quello di un gestionale da postazione fissa, non di una pagina web
+messa in una finestra:
+
+- **Navigazione raggruppata** per mestiere — Operatività, Anagrafiche,
+  Comunicazioni, Amministrazione — comprimibile a sole icone con `Ctrl+B`.
+- **Testata di contesto** con percorso della sezione, ricerca globale, spia del
+  collegamento, notifiche non lette e cambio tema.
+- **Barra di stato** sempre visibile: chi è collegato, a quale server, quando è
+  arrivato l'ultimo aggiornamento, se gli avvisi sono silenziati, quale
+  versione è installata.
+- **Tema chiaro e scuro** curati entrambi, con due densità di elenco
+  (compatta per stare sulle righe, comoda per la lettura prolungata).
+- **Schermata di accesso dello Studio**, con il marchio, il nome dello Studio e
+  l'indirizzo del server a cui ci si sta collegando.
 
 ## Accesso e sicurezza
 
@@ -75,6 +96,29 @@ condizione predefinita — l'app chiede il codice come il sito.
   usano.
 - Le sessioni aperte si vedono e si revocano da **Impostazioni → Dispositivi
   collegati**.
+
+### Blocco della postazione
+
+Dopo un tempo di inattività configurabile (15 minuti di serie) l'app si oscura
+e chiede di nuovo la password; `Ctrl+L` blocca subito. La sessione con il
+server **non** viene chiusa: non serve un nuovo codice di verifica e non si
+perde il lavoro a metà, si verifica soltanto che davanti al computer ci sia
+ancora la stessa persona. Si regola da **Impostazioni → Sicurezza della
+postazione**.
+
+### Registro locale delle attività
+
+Il server sa che cosa è cambiato sulle pratiche; il registro locale sa che cosa
+è stato fatto *da questo computer*, anche quando la rete era giù: accessi
+riusciti e **rifiutati**, sblocchi, esportazioni, importazioni di impostazioni.
+È un file JSONL nella cartella dati, che ruota da solo, consultabile ed
+esportabile dalla sezione **Registro attività**.
+
+### Quando avvisare
+
+Le notifiche di Windows si possono silenziare a mano ("non disturbare") o
+limitare all'orario di lavoro dello Studio, sabato e domenica esclusi. La coda
+continua comunque ad aggiornarsi: cambia solo il riquadro che salta su.
 
 ## Pannello di controllo (solo titolare)
 
@@ -179,6 +223,16 @@ Alla prima apertura l'app punta al Worker di produzione
 `wrangler dev`. Da lì si regolano anche il ritmo delle notifiche, la densità
 degli elenchi, il tema e l'avvio in area di notifica.
 
+La configurazione di una postazione si **esporta e si importa** in JSON
+(**Impostazioni → Copia delle impostazioni**): server, viste salvate, aspetto,
+sicurezza e orari si portano su un altro computer senza rifare tutto a mano.
+La chiave dell'applicazione e le credenziali non vengono mai esportate.
+
+**Impostazioni → Diagnostica** risponde alla prima domanda dell'assistenza:
+versione, latenza verso il server, identificativo del dispositivo, stato della
+cifratura della sessione e percorsi dei file. Il rapporto si esporta in un
+file.
+
 ## Com'è fatta
 
 ```
@@ -188,12 +242,18 @@ src/
     api.js      chiamate al Worker (Bearer + device id + CSRF automatico)
     store.js    impostazioni, token cifrato, identificativo del dispositivo
     archivio.js schede locali di condominio e condomino
+    registro.js registro locale delle attività della postazione (JSONL)
     aggiornamenti.js  controllo, scaricamento e installazione delle versioni
   preload/      ponte ristretto fra pagina e processo principale
   renderer/     interfaccia (moduli ES nativi, nessun bundler)
-    app.js      accesso, guscio, navigazione, comando rapido
-    lib/ui.js   elementi, formattazione, modali, cache, chiamate
-    views/      una sezione per file
+    app.js      guscio, navigazione, comando rapido, barra di stato
+    assets/logo.svg   marchio dello Studio, usato ovunque nell'app
+    lib/ui.js         elementi, formattazione, modali, cache, chiamate
+    lib/marchio.js    marchio e nomi dello Studio
+    lib/esporta.js    esportazione CSV e JSON
+    lib/blocco.js     blocco della postazione per inattività
+    lib/scorciatoie.js elenco delle scorciatoie (F1)
+    views/            una sezione per file (accesso.js è la schermata di accesso)
 ```
 
 ```
