@@ -10,7 +10,8 @@
     "start": "electron .",
     "dev": "electron . --dev",
     "dist": "electron-builder --win",
-    "pack": "electron-builder --win --dir"
+    "pack": "electron-builder --win --dir",
+    "rilascia": "electron-builder --win --publish always"
   },
   "devDependencies": {
     "electron": "^33.0.0",
@@ -19,15 +20,41 @@
   "build": {
     "appId": "net.burchielli.winstudioadmin",
     "productName": "Win Studio Admin",
-    "files": ["src/**/*", "package.json"],
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }]
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
     },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "shortcutName": "Win Studio Admin"
-    }
+      "shortcutName": "Win Studio Admin",
+      "differentialPackage": true
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "giuliomichelotti820-del",
+        "repo": "Win-Studio-Admin",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/giuliomichelotti820-del/Win-Studio-Admin.git"
   }
 }

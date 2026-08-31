@@ -29,6 +29,7 @@ let smontaVista = null;
 let vistaCorrente = null;
 let contenitoreVista = null;
 let badgeNotifiche = null;
+let barraAggiornamento = null;
 
 /* =============================================================================
  * Accesso
@@ -177,11 +178,14 @@ function costruisciGuscio() {
   ]);
 
   contenitoreVista = el("main", { class: "vista" });
+  barraAggiornamento = el("div", { class: "barra-aggiornamento nascosta" });
 
   radice.append(el("div", { class: "guscio" }, [
     laterale,
-    el("div", { class: "corpo" }, [testa, contenitoreVista])
+    el("div", { class: "corpo" }, [testa, barraAggiornamento, contenitoreVista])
   ]));
+
+  window.studio.statoAggiornamento().then(mostraAggiornamento);
 }
 
 function evidenziaMenu(idSezione) {
@@ -368,6 +372,52 @@ async function avvia() {
   costruisciGuscio();
   await naviga(stato.impostazioni.ultimaVista || "panoramica");
 }
+
+/* =============================================================================
+ * Aggiornamento dell'applicazione
+ *
+ * La nuova versione arriva da sola: qui si vede solo a che punto e, e si puo
+ * chiedere il riavvio quando fa comodo. Chi non tocca niente la trova
+ * installata alla prossima apertura.
+ * ========================================================================== */
+
+function mostraAggiornamento(stato) {
+  if (!barraAggiornamento || !stato) return;
+
+  const visibile = ["scaricamento", "pronta", "errore"].includes(stato.fase);
+  barraAggiornamento.classList.toggle("nascosta", !visibile);
+  if (!visibile) return;
+
+  svuota(barraAggiornamento);
+  barraAggiornamento.classList.toggle("guasta", stato.fase === "errore");
+
+  if (stato.fase === "scaricamento") {
+    barraAggiornamento.append(
+      el("span", { text: `Sto scaricando la versione ${stato.versione || ""}… ${stato.percentuale || 0}%` })
+    );
+    return;
+  }
+
+  if (stato.fase === "errore") {
+    barraAggiornamento.append(
+      el("span", { text: `Aggiornamento non riuscito: ${stato.errore}` }),
+      el("span", { class: "spazio" }),
+      el("button", { class: "bottone piccolo", text: "Riprova", onclick: () => window.studio.controllaAggiornamento() })
+    );
+    return;
+  }
+
+  barraAggiornamento.append(
+    el("span", { text: `E pronta la versione ${stato.versione}. Verra installata alla chiusura dell'app.` }),
+    el("span", { class: "spazio" }),
+    el("button", {
+      class: "bottone piccolo", text: "Riavvia e aggiorna adesso",
+      onclick: () => window.studio.installaAggiornamento()
+    })
+  );
+}
+
+window.studio.su("app:aggiornamento", mostraAggiornamento);
 
 window.studio.su("app:naviga", (destinazione) => { if (stato && stato.autenticato) naviga(destinazione); });
 

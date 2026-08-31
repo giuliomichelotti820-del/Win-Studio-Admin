@@ -78,6 +78,36 @@ scritta anche a schermo perché cambia chi vede cosa:
 Accanto alla scheda di una persona l'app mostra ciò che il server sa già di lei:
 posizione contabile, importo scoperto, note e pratiche recenti.
 
+## Aggiornamento automatico
+
+Ogni push sul ramo principale del repository diventa una nuova versione: il
+flusso `.github/workflows/rilascio.yml` alza il numero di versione, compila
+l'installer per Windows e lo pubblica fra le **Release** di GitHub.
+
+Le copie installate se ne accorgono da sole:
+
+- controllo all'avvio e poi una volta all'ora;
+- scaricamento in sottofondo, senza interrompere il lavoro;
+- installazione alla chiusura dell'app — oppure subito, dal riquadro che
+  compare in alto («Riavvia e aggiorna adesso») o da **Impostazioni →
+  Aggiornamenti**, dove si vede sempre a che punto e e si puo forzare un
+  controllo. Anche il menu dell'area di notifica ha la voce «Controlla
+  aggiornamenti».
+
+Nessun aggiornamento parte di sorpresa mentre si sta scrivendo a un condomino:
+il riavvio avviene solo su richiesta o alla chiusura. Se un aggiornamento non
+riesce, l'app continua a funzionare con la versione che ha e lo segnala nel
+riquadro.
+
+Non serve configurare niente: il flusso usa il `GITHUB_TOKEN` che GitHub
+fornisce da solo. Per pubblicare a mano — o per alzare `minor`/`major` invece
+di `patch` — basta lanciare il flusso «Rilascio Windows» da **Actions →
+Run workflow**. In locale, `npm run rilascia` compila e pubblica usando la
+variabile d'ambiente `GH_TOKEN`.
+
+L'aggiornamento automatico vale sull'app installata: avviata da sorgente con
+`npm start` il controllo resta spento, e le impostazioni lo dicono.
+
 ## Requisiti
 
 - Windows 10 (1809 o successivo) o Windows 11, 64 bit
@@ -118,6 +148,7 @@ src/
     api.js      chiamate al Worker (Bearer + device id + CSRF automatico)
     store.js    impostazioni, token cifrato, identificativo del dispositivo
     archivio.js schede locali di condominio e condomino
+    aggiornamenti.js  controllo, scaricamento e installazione delle versioni
   preload/      ponte ristretto fra pagina e processo principale
   renderer/     interfaccia (moduli ES nativi, nessun bundler)
     app.js      accesso, guscio, navigazione, comando rapido
@@ -125,5 +156,9 @@ src/
     views/      una sezione per file
 ```
 
-Nessun bundler e nessuna dipendenza a runtime: si avvia subito e si aggiorna
-modificando un file.
+```
+.github/workflows/rilascio.yml   pubblicazione automatica a ogni push
+```
+
+Nessun bundler lato interfaccia e una sola dipendenza a runtime
+(`electron-updater`): l'app si avvia subito e si aggiorna da sola.

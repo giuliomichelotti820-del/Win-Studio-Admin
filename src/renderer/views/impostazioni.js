@@ -46,6 +46,53 @@ export default async function monta(radice, ctx) {
     })
   ]));
 
+  /* --- Aggiornamenti ----------------------------------------------------- */
+
+  const statoAggiornamento = el("div", { class: "colonna" }, [caricamento("Controllo…")]);
+
+  const DESCRIZIONI = {
+    controllo: "Sto cercando una versione piu recente…",
+    scaricamento: "Sto scaricando la nuova versione in sottofondo.",
+    pronta: "La nuova versione e pronta: viene installata alla chiusura dell'app.",
+    aggiornata: "Questa e l'ultima versione pubblicata.",
+    errore: "L'ultimo controllo non e riuscito.",
+    sviluppo: "Avvio da sorgente: l'aggiornamento automatico vale solo sull'app installata.",
+    "non-configurato": "Aggiornamento automatico non disponibile in questa installazione.",
+    sconosciuto: "Nessun controllo ancora eseguito."
+  };
+
+  async function disegnaAggiornamento(dati) {
+    const info = dati || (await window.studio.statoAggiornamento());
+    svuota(statoAggiornamento).append(
+      el("p", { text: DESCRIZIONI[info.fase] || info.fase }),
+      info.versione && info.fase !== "aggiornata" ? el("p", { class: "sotto", text: `Versione trovata: ${info.versione}` }) : null,
+      info.fase === "scaricamento" ? el("p", { class: "sotto", text: `${info.percentuale || 0}% scaricato` }) : null,
+      info.errore ? el("p", { class: "errore", text: info.errore }) : null,
+      el("div", { class: "toolbar" }, [
+        el("button", {
+          class: "bottone", text: "Controlla adesso",
+          onclick: async () => {
+            svuota(statoAggiornamento).appendChild(caricamento("Controllo…"));
+            const esito = await window.studio.controllaAggiornamento();
+            disegnaAggiornamento(esito.ok ? esito.dati : null);
+          }
+        }),
+        info.fase === "pronta"
+          ? el("button", { class: "bottone primario", text: "Riavvia e aggiorna", onclick: () => window.studio.installaAggiornamento() })
+          : null
+      ])
+    );
+  }
+
+  radice.appendChild(el("section", { class: "riquadro stretto" }, [
+    el("h2", { text: "Aggiornamenti" }),
+    el("p", { class: "sotto", text: "Ogni pubblicazione sul repository dello Studio diventa una nuova versione: l'app la cerca da sola ogni ora, la scarica in sottofondo e la installa alla chiusura." }),
+    statoAggiornamento
+  ]));
+
+  const staccaAggiornamento = window.studio.su("app:aggiornamento", (dati) => disegnaAggiornamento(dati));
+  disegnaAggiornamento();
+
   const dispositivi = el("div", {}, [caricamento()]);
   radice.appendChild(el("section", { class: "riquadro stretto" }, [
     el("h2", { text: "Dispositivi collegati" }),
@@ -108,5 +155,5 @@ export default async function monta(radice, ctx) {
   ]));
 
   await caricaDispositivi();
-  return () => {};
+  return () => staccaAggiornamento();
 }

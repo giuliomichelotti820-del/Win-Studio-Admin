@@ -12,7 +12,8 @@ const eventi = {
   "app:naviga": new Set(),
   "app:notifiche": new Set(),
   "app:sessione-scaduta": new Set(),
-  "app:scorciatoia-globale": new Set()
+  "app:scorciatoia-globale": new Set(),
+  "app:aggiornamento": new Set()
 };
 
 for (const canale of Object.keys(eventi)) {
@@ -36,6 +37,10 @@ contextBridge.exposeInMainWorld("studio", {
   patch: (percorso, corpo) => ipcRenderer.invoke("api:richiesta", { metodo: "PATCH", percorso, corpo }),
   put: (percorso, corpo) => ipcRenderer.invoke("api:richiesta", { metodo: "PUT", percorso, corpo }),
   del: (percorso, corpo) => ipcRenderer.invoke("api:richiesta", { metodo: "DELETE", percorso, corpo }),
+
+  statoAggiornamento: () => ipcRenderer.invoke("aggiornamento:stato"),
+  controllaAggiornamento: () => ipcRenderer.invoke("aggiornamento:controlla"),
+  installaAggiornamento: () => ipcRenderer.invoke("aggiornamento:installa"),
 
   archivioLeggi: (tipo, chiave) => ipcRenderer.invoke("archivio:leggi", { tipo, chiave }),
   archivioSalva: (tipo, chiave, campi, note) => ipcRenderer.invoke("archivio:salva", { tipo, chiave, campi, note }),

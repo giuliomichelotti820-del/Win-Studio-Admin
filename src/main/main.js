@@ -16,6 +16,7 @@ const {
 const store = require("./store");
 const api = require("./api");
 const archivio = require("./archivio");
+const aggiornamenti = require("./aggiornamenti");
 
 let finestra = null;
 let tray = null;
@@ -135,6 +136,7 @@ function creaTray() {
     { label: "Apri", click: mostraFinestra },
     { label: "Coda segnalazioni", click: () => vaiA("coda") },
     { label: "Nuove notifiche", click: () => vaiA("notifiche") },
+    { label: "Controlla aggiornamenti", click: () => aggiornamenti.controlla() },
     { type: "separator" },
     { label: "Esci", click: () => { uscitaRichiesta = true; app.quit(); } }
   ]));
@@ -265,6 +267,10 @@ ipcMain.handle("api:scarica", (_e, { percorso, nomeFile }) => risultato((async (
   return scelta.filePath;
 })()));
 
+ipcMain.handle("aggiornamento:stato", () => aggiornamenti.stato());
+ipcMain.handle("aggiornamento:controlla", () => risultato(aggiornamenti.controlla()));
+ipcMain.handle("aggiornamento:installa", () => aggiornamenti.installaOra(finestra));
+
 ipcMain.handle("app:apri-esterno", (_e, url) => {
   if (/^https?:\/\//i.test(url)) shell.openExternal(url);
   return true;
@@ -353,6 +359,10 @@ app.whenReady().then(() => {
   creaTray();
   if (store.getSessione().token) avviaPolling();
 
+  // Aggiornamento automatico: cerca la versione pubblicata dall'ultimo push
+  // sul repository, la scarica in sottofondo e la installa alla chiusura.
+  aggiornamenti.avvia(invia);
+
   // Richiamo rapido da qualunque applicazione: Ctrl+Alt+S riporta su l'app e
   // apre la ricerca. Se la combinazione e gia occupata da un altro programma
   // l'app parte lo stesso, senza scorciatoia globale.
@@ -370,4 +380,4 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", () => { uscitaRichiesta = true; });
-app.on("will-quit", () => { globalShortcut.unregisterAll(); });
+app.on("will-quit", () => { globalShortcut.unregisterAll(); aggiornamenti.ferma(); });
