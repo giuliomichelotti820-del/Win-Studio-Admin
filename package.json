@@ -1,0 +1,33 @@
+{
+  "name": "win-studio-admin",
+  "productName": "Win Studio Admin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Applicazione desktop Windows 10/11 per la gestione delle segnalazioni (ticket) e dell'operativita dello Studio Associato Amm. Burchielli.",
+  "author": "Studio Associato Amm. Burchielli",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "dist": "electron-builder --win",
+    "pack": "electron-builder --win --dir"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "net.burchielli.winstudioadmin",
+    "productName": "Win Studio Admin",
+    "files": ["src/**/*", "package.json"],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "Win Studio Admin"
+    }
+  }
+}
