@@ -3,7 +3,8 @@
  * dispositivi collegati all'account e chiusura della sessione.
  * ========================================================================== */
 
-import { el, svuota, api, toast, dataOra, statoVuoto, caricamento, conferma } from "../lib/ui.js";
+import { el, svuota, aggiungi, api, toast, dataOra, statoVuoto, caricamento, conferma } from "../lib/ui.js";
+import { esportaJson } from "../lib/esporta.js";
 
 export default async function monta(radice, ctx) {
   const impostazioni = ctx.impostazioni;
@@ -69,7 +70,7 @@ export default async function monta(radice, ctx) {
 
   async function disegnaAggiornamento(dati) {
     const info = dati || (await window.studio.statoAggiornamento());
-    svuota(statoAggiornamento).append(
+    aggiungi(svuota(statoAggiornamento),
       el("p", { text: DESCRIZIONI[info.fase] || info.fase }),
       info.versione && info.fase !== "aggiornata" ? el("p", { class: "sotto", text: `Versione trovata: ${info.versione}` }) : null,
       info.fase === "scaricamento" ? el("p", { class: "sotto", text: `${info.percentuale || 0}% scaricato` }) : null,
@@ -98,6 +99,174 @@ export default async function monta(radice, ctx) {
 
   const staccaAggiornamento = window.studio.su("app:aggiornamento", (dati) => disegnaAggiornamento(dati));
   disegnaAggiornamento();
+
+  /* --- Sicurezza della postazione -----------------------------------------
+   * Lo Studio tratta dati di condomini, morosita e fornitori: una postazione
+   * lasciata aperta nell'ufficio dove entrano amministrati e fornitori e un
+   * problema concreto, non un'ipotesi.
+   * ---------------------------------------------------------------------- */
+
+  const blocco = el("select", { class: "campo largo" }, [
+    ["0", "Mai (sconsigliato sulle postazioni condivise)"],
+    ["5", "Dopo 5 minuti di inattivita"],
+    ["15", "Dopo 15 minuti di inattivita"],
+    ["30", "Dopo 30 minuti di inattivita"],
+    ["60", "Dopo un'ora di inattivita"]
+  ].map(([v, t]) => el("option", { value: v, text: t, selected: String(impostazioni.bloccoMinuti) === v })));
+
+  const registroAttivo = el("input", { type: "checkbox", checked: impostazioni.registroAttivo !== false });
+
+  radice.appendChild(el("section", { class: "riquadro stretto" }, [
+    el("h2", { text: "Sicurezza della postazione" }),
+    el("label", { class: "campo-etichetta" }, [el("span", { text: "Blocca lo schermo" }), blocco]),
+    el("p", { class: "sotto", text: "Allo scadere del tempo l'app si oscura e chiede di nuovo la password. La sessione con il server resta aperta: non serve un nuovo codice di verifica e non si perde il lavoro a meta. Si puo bloccare subito con Ctrl+L." }),
+    el("label", { class: "campo-inline" }, [
+      registroAttivo, el("span", { text: "Tieni il registro delle attivita di questa postazione" })
+    ]),
+    el("p", { class: "sotto", text: "Accessi riusciti e rifiutati, sblocchi, esportazioni e importazioni restano annotati in un file locale, consultabile dalla sezione Registro attivita." }),
+    el("dl", { class: "dati" }, [
+      el("dt", { text: "Sessione sul disco" }),
+      el("dd", { text: ctx.cifratura === false ? "Solo in memoria (cifratura di Windows non disponibile)" : "Cifrata con le chiavi dell'account Windows" })
+    ]),
+    el("button", {
+      class: "bottone primario", text: "Salva la sicurezza",
+      onclick: async () => {
+        await window.studio.impostazioni({
+          bloccoMinuti: Number(blocco.value),
+          registroAttivo: registroAttivo.checked
+        });
+        toast("Impostazioni di sicurezza salvate.", "ok");
+        ctx.ricarica();
+      }
+    })
+  ]));
+
+  /* --- Silenzio delle notifiche -------------------------------------------
+   * Le notifiche di Windows che saltano su alle undici di sera sono il modo
+   * piu rapido per far disinstallare un gestionale.
+   * ---------------------------------------------------------------------- */
+
+  const orario = impostazioni.orarioLavoro || {};
+  const nonDisturbare = el("input", { type: "checkbox", checked: !!impostazioni.nonDisturbare });
+  const orarioAttivo = el("input", { type: "checkbox", checked: !!orario.attivo });
+  const oraInizio = el("input", { class: "campo", type: "time", value: orario.inizio || "08:30" });
+  const oraFine = el("input", { class: "campo", type: "time", value: orario.fine || "18:30" });
+  const soloFeriali = el("input", { type: "checkbox", checked: orario.feriali !== false });
+
+  radice.appendChild(el("section", { class: "riquadro stretto" }, [
+    el("h2", { text: "Quando avvisare" }),
+    el("label", { class: "campo-inline" }, [
+      nonDisturbare, el("span", { text: "Non disturbare: nessuna notifica di Windows finche resta acceso" })
+    ]),
+    el("label", { class: "campo-inline" }, [
+      orarioAttivo, el("span", { text: "Avvisa solo durante l'orario di lavoro" })
+    ]),
+    el("div", { class: "griglia-campi" }, [
+      el("label", { class: "campo-etichetta" }, [el("span", { text: "Dalle" }), oraInizio]),
+      el("label", { class: "campo-etichetta" }, [el("span", { text: "Alle" }), oraFine])
+    ]),
+    el("label", { class: "campo-inline" }, [
+      soloFeriali, el("span", { text: "Silenzio il sabato e la domenica" })
+    ]),
+    el("p", { class: "sotto", text: "Il silenzio riguarda solo i riquadri di Windows: la coda continua ad aggiornarsi e il numero delle notifiche non lette resta visibile nell'app." }),
+    el("button", {
+      class: "bottone primario", text: "Salva gli avvisi",
+      onclick: async () => {
+        await window.studio.impostazioni({
+          nonDisturbare: nonDisturbare.checked,
+          orarioLavoro: {
+            attivo: orarioAttivo.checked,
+            inizio: oraInizio.value || "08:30",
+            fine: oraFine.value || "18:30",
+            feriali: soloFeriali.checked
+          }
+        });
+        toast("Preferenze degli avvisi salvate.", "ok");
+        ctx.ricarica();
+      }
+    })
+  ]));
+
+  /* --- Copia di sicurezza delle impostazioni ------------------------------- */
+
+  radice.appendChild(el("section", { class: "riquadro stretto" }, [
+    el("h2", { text: "Copia delle impostazioni" }),
+    el("p", { class: "sotto", text: "Server, viste salvate della coda, aspetto, sicurezza e orari si portano su un'altra postazione senza rifare la configurazione a mano. La chiave dell'applicazione e le credenziali non vengono mai esportate." }),
+    el("div", { class: "azioni" }, [
+      el("button", {
+        class: "bottone", text: "Esporta su file",
+        onclick: async () => {
+          const esito = await window.studio.esportaImpostazioni();
+          if (!esito.ok) { toast(esito.errore, "errore"); return; }
+          await esportaJson("impostazioni-win-studio-admin.json", esito.dati, "Esporta le impostazioni");
+        }
+      }),
+      el("button", {
+        class: "bottone", text: "Importa da file",
+        onclick: async () => {
+          if (!(await conferma("Le impostazioni attuali di questa postazione vengono sostituite da quelle del file. Procedere?", "Importare le impostazioni?"))) return;
+          const esito = await window.studio.importaImpostazioni();
+          if (!esito.ok) { toast(esito.errore, "errore"); return; }
+          if (esito.dati === null) return;
+          toast(`${esito.dati} impostazioni importate.`, "ok");
+          ctx.ricarica();
+        }
+      }),
+      el("button", { class: "bottone", text: "Apri la cartella dati", onclick: () => window.studio.apriCartellaDati() })
+    ])
+  ]));
+
+  /* --- Diagnostica ---------------------------------------------------------
+   * La prima domanda dell'assistenza e sempre la stessa: che versione hai, il
+   * server risponde, dove sono i file. Qui c'e tutto, copiabile in un colpo.
+   * ---------------------------------------------------------------------- */
+
+  const pannelloDiagnostica = el("div", {}, [caricamento("Controllo il collegamento…")]);
+
+  function rigaDiagnostica(dati) {
+    const stato = !dati.raggiungibile ? "giu" : dati.latenza > 1200 ? "lenta" : "viva";
+    const giudizio = !dati.raggiungibile
+      ? `Non raggiungibile (${dati.dettaglioRete})`
+      : dati.latenza > 1200 ? `Risposta lenta: ${dati.latenza} ms` : `Risponde in ${dati.latenza} ms`;
+
+    return el("div", { class: "colonna" }, [
+      el("p", {}, [el("span", { class: `spia ${stato}`, text: giudizio })]),
+      el("dl", { class: "dati" }, [
+        el("dt", { text: "Server" }), el("dd", { class: "mono", text: dati.baseUrl }),
+        el("dt", { text: "Versione app" }), el("dd", { text: dati.versione }),
+        el("dt", { text: "Electron / Chrome" }), el("dd", { text: `${dati.electron} / ${dati.chrome}` }),
+        el("dt", { text: "Sistema" }), el("dd", { text: dati.piattaforma }),
+        el("dt", { text: "Identificativo dispositivo" }), el("dd", { class: "mono", text: dati.deviceId || "—" }),
+        el("dt", { text: "Cifratura sessione" }), el("dd", { text: dati.cifratura ? "Disponibile" : "Non disponibile" }),
+        el("dt", { text: "Notifiche" }), el("dd", { text: dati.silenzio ? "Silenziate adesso" : "Attive" }),
+        el("dt", { text: "Cartella dati" }), el("dd", { class: "mono testo-breve", title: dati.cartellaDati, text: dati.cartellaDati }),
+        el("dt", { text: "Registro" }), el("dd", { class: "mono testo-breve", title: dati.registro, text: dati.registro })
+      ]),
+      el("div", { class: "azioni" }, [
+        el("button", { class: "bottone", text: "Ricontrolla", onclick: caricaDiagnostica }),
+        el("button", {
+          class: "bottone", text: "Esporta il rapporto",
+          onclick: () => esportaJson("diagnostica-win-studio-admin.json", dati, "Esporta la diagnostica")
+        })
+      ])
+    ]);
+  }
+
+  async function caricaDiagnostica() {
+    svuota(pannelloDiagnostica).appendChild(caricamento("Controllo il collegamento…"));
+    const esito = await window.studio.diagnostica();
+    svuota(pannelloDiagnostica).appendChild(esito.ok
+      ? rigaDiagnostica(esito.dati)
+      : statoVuoto("Diagnostica non disponibile.", esito.errore));
+  }
+
+  radice.appendChild(el("section", { class: "riquadro stretto" }, [
+    el("h2", { text: "Diagnostica" }),
+    el("p", { class: "sotto", text: "Da leggere all'assistenza quando qualcosa non va, prima di qualunque altra prova." }),
+    pannelloDiagnostica
+  ]));
+
+  caricaDiagnostica();
 
   const dispositivi = el("div", {}, [caricamento()]);
   radice.appendChild(el("section", { class: "riquadro stretto" }, [

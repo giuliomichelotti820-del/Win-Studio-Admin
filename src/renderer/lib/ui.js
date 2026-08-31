@@ -21,6 +21,21 @@ export function el(tag, attributi = {}, figli = []) {
   return nodo;
 }
 
+/**
+ * Aggiunge figli scartando quelli assenti.
+ *
+ * `Node.append(null)` inserisce la parola "null" nella pagina, a differenza di
+ * `el()` che i figli nulli li ignora: chi scrive `condizione ? nodo : null` in
+ * una append se lo ritrova stampato a schermo.
+ */
+export function aggiungi(nodo, ...figli) {
+  for (const figlio of figli.flat()) {
+    if (figlio === null || figlio === undefined || figlio === false) continue;
+    nodo.append(figlio);
+  }
+  return nodo;
+}
+
 export function svuota(nodo) {
   while (nodo.firstChild) nodo.removeChild(nodo.firstChild);
   return nodo;
@@ -162,7 +177,7 @@ export function invalidaCache(chiave) {
 
 export function modale({ titolo, contenuto, azioni = [], larghezza = 520 }) {
   const sfondo = el("div", { class: "modale-sfondo" });
-  const finestra = el("div", { class: "modale", style: `max-width:${larghezza}px` }, [
+  const finestra = el("div", { class: "modale" }, [
     el("header", { class: "modale-testa" }, [
       el("h2", { text: titolo }),
       el("button", { class: "icona", text: "✕", onclick: chiudi, title: "Chiudi (Esc)" })
@@ -186,6 +201,9 @@ export function modale({ titolo, contenuto, azioni = [], larghezza = 520 }) {
   function suTasto(evento) {
     if (evento.key === "Escape") { evento.stopPropagation(); chiudi(); }
   }
+
+  // La CSP vieta l'attributo style: la larghezza si imposta dal CSSOM.
+  finestra.style.maxWidth = `${larghezza}px`;
 
   sfondo.addEventListener("mousedown", (evento) => { if (evento.target === sfondo) chiudi(); });
   document.addEventListener("keydown", suTasto, true);

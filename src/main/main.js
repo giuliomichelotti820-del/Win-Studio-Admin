@@ -17,6 +17,7 @@ const store = require("./store");
 const api = require("./api");
 const archivio = require("./archivio");
 const aggiornamenti = require("./aggiornamenti");
+const registro = require("./registro");
 
 let finestra = null;
 let tray = null;
@@ -46,7 +47,7 @@ function creaFinestra() {
     minWidth: 1024,
     minHeight: 640,
     show: false,
-    backgroundColor: "#0f1115",
+    backgroundColor: "#0d1017",
     autoHideMenuBar: true,
     title: "Win Studio Admin",
     webPreferences: {
@@ -152,6 +153,55 @@ function invia(canale, dati) {
   if (finestra && !finestra.isDestroyed()) finestra.webContents.send(canale, dati);
 }
 
+/* --- Registro locale ----------------------------------------------------- */
+
+// Ogni annotazione porta con se chi era collegato: il registro deve dire *chi*
+// ha fatto cosa da questa postazione, non solo cosa e successo.
+function annota(azione, dettagli = {}) {
+  if (!store.getImpostazioni().registroAttivo) return false;
+  const utente = store.getSessione().user;
+  return registro.annota({
+    azione,
+    utente: utente ? { id: utente.id, nome: utente.fullName, email: utente.email } : null,
+    ...dettagli
+  });
+}
+
+/* --- Silenzio delle notifiche -------------------------------------------- */
+
+function minutiDelGiorno(orario) {
+  const [ore, minuti] = String(orario || "").split(":").map(Number);
+  if (!Number.isFinite(ore) || !Number.isFinite(minuti)) return null;
+  return ore * 60 + minuti;
+}
+
+/**
+ * Vero quando le notifiche di Windows devono restare ferme: interruttore
+ * "non disturbare" acceso a mano, oppure siamo fuori dall'orario di lavoro
+ * dichiarato nelle impostazioni.
+ *
+ * L'app continua comunque a scaricare le notifiche: si vede il pallino nella
+ * barra laterale, non salta su il riquadro di Windows.
+ */
+function silenzioAttivo(adesso = new Date()) {
+  const impostazioni = store.getImpostazioni();
+  if (impostazioni.nonDisturbare) return true;
+
+  const orario = impostazioni.orarioLavoro || {};
+  if (!orario.attivo) return false;
+
+  const giorno = adesso.getDay();
+  if (orario.feriali && (giorno === 0 || giorno === 6)) return true;
+
+  const inizio = minutiDelGiorno(orario.inizio);
+  const fine = minutiDelGiorno(orario.fine);
+  if (inizio === null || fine === null) return false;
+
+  const ora = adesso.getHours() * 60 + adesso.getMinutes();
+  // Turno che scavalca la mezzanotte: fuori orario e la fascia *interna*.
+  return fine <= inizio ? (ora >= fine && ora < inizio) : (ora < inizio || ora >= fine);
+}
+
 /* --- Notifiche di sistema ------------------------------------------------ */
 
 async function controllaNotifiche() {
@@ -170,6 +220,7 @@ async function controllaNotifiche() {
     }
 
     if (!store.getImpostazioni().notificheDesktop || !Notification.isSupported()) return;
+    if (silenzioAttivo()) return;
 
     // Solo cio che e arrivato dopo l'ultimo controllo: riaprire l'app non deve
     // far ripiovere sul desktop notifiche gia viste.
@@ -226,18 +277,48 @@ ipcMain.handle("app:stato", () => {
 ipcMain.handle("auth:login", (_e, { email, password }) => risultato(api.login(email, password).then((dati) => {
   // Accesso senza codice: la sessione e gia aperta, il controllo delle
   // notifiche puo partire subito come dopo la verifica dell'OTP.
-  if (dati && dati.token) avviaPolling();
+  if (dati && dati.token) {
+    avviaPolling();
+    annota("accesso", { oggetto: email, dettaglio: "senza codice di verifica" });
+  } else {
+    annota("accesso-codice-richiesto", { oggetto: email });
+  }
   return dati;
+}).catch((errore) => {
+  // Il tentativo fallito e la voce piu importante del registro: e l'unica che
+  // racconta qualcosa che nessuno ha voluto fare.
+  registro.annota({ azione: "accesso-negato", oggetto: email, dettaglio: errore.message, esito: "errore" });
+  throw errore;
 })));
+
 ipcMain.handle("auth:otp", (_e, { ticket, codice }) => risultato(api.verificaOtp(ticket, codice).then((dati) => {
   avviaPolling();
+  annota("accesso", { dettaglio: "codice di verifica corretto" });
   return dati;
 })));
+
 ipcMain.handle("auth:resend", (_e, { ticket }) => risultato(api.reinviaOtp(ticket)));
+
 ipcMain.handle("auth:logout", () => risultato(api.logout().then(() => {
+  annota("uscita");
   clearInterval(timerNotifiche);
   return true;
 })));
+
+// Riaggancio dopo il blocco per inattivita: la password viene verificata dal
+// server, ma la sessione aperta resta la stessa.
+ipcMain.handle("auth:sblocca", (_e, { password }) => risultato((async () => {
+  const utente = store.getSessione().user;
+  if (!utente || !utente.email) throw new Error("Nessuna sessione da sbloccare.");
+  try {
+    await api.login(utente.email, password);
+  } catch (errore) {
+    annota("sblocco-negato", { dettaglio: errore.message, esito: "errore" });
+    throw errore;
+  }
+  annota("sblocco");
+  return true;
+})()));
 
 ipcMain.handle("api:richiesta", (_e, { metodo, percorso, corpo }) => risultato(api.richiesta(metodo, percorso, corpo)));
 
@@ -283,6 +364,136 @@ ipcMain.handle("app:apri-esterno", (_e, url) => {
 
 ipcMain.handle("app:apri-file", (_e, percorso) => {
   shell.showItemInFolder(percorso);
+  return true;
+});
+
+/* --- Registro locale delle attivita -------------------------------------- */
+
+ipcMain.handle("registro:annota", (_e, voce) => annota(voce.azione, voce));
+ipcMain.handle("registro:leggi", (_e, filtri) => risultato(Promise.resolve(registro.leggi(filtri || {}))));
+ipcMain.handle("registro:svuota", () => risultato(Promise.resolve(registro.svuota())));
+
+/* --- Esportazione su file ------------------------------------------------
+ * Un solo canale per tutte le esportazioni dell'app (CSV degli elenchi, JSON
+ * delle impostazioni, registro delle attivita): il renderer prepara il testo,
+ * il processo principale chiede dove salvarlo e scrive.
+ * ---------------------------------------------------------------------- */
+
+ipcMain.handle("app:salva-testo", (_e, { nomeFile, contenuto, titolo }) => risultato((async () => {
+  const estensione = path.extname(nomeFile || "").replace(".", "") || "txt";
+  const scelta = await dialog.showSaveDialog(finestra, {
+    title: titolo || "Salva il file",
+    defaultPath: path.join(app.getPath("downloads"), nomeFile || "esportazione.txt"),
+    filters: [{ name: estensione.toUpperCase(), extensions: [estensione] }]
+  });
+  if (scelta.canceled || !scelta.filePath) return null;
+
+  // Il BOM serve a Excel italiano: senza, le lettere accentate dei nomi dei
+  // condomini escono illeggibili al doppio clic sul CSV.
+  const testo = estensione === "csv" ? `\uFEFF${contenuto}` : contenuto;
+  fs.writeFileSync(scelta.filePath, testo, "utf8");
+  annota("esportazione", { oggetto: path.basename(scelta.filePath), dettaglio: `${contenuto.length} caratteri` });
+  return scelta.filePath;
+})()));
+
+/* --- Impostazioni: copia di sicurezza ------------------------------------
+ * Le preferenze della postazione (server, viste salvate, orari, aspetto) si
+ * portano su un altro computer senza rifare la configurazione a mano. La
+ * chiave dell'applicazione e le credenziali non escono mai dal file.
+ * ---------------------------------------------------------------------- */
+
+const NON_ESPORTABILI = ["chiaveApp", "ultimaEmail", "finestra"];
+
+ipcMain.handle("impostazioni:esporta", () => risultato(Promise.resolve((() => {
+  const copia = { ...store.getImpostazioni() };
+  for (const chiave of NON_ESPORTABILI) delete copia[chiave];
+  return {
+    generato: new Date().toISOString(),
+    applicazione: "Win Studio Admin",
+    versione: app.getVersion(),
+    impostazioni: copia
+  };
+})())));
+
+ipcMain.handle("impostazioni:importa", () => risultato((async () => {
+  const scelta = await dialog.showOpenDialog(finestra, {
+    title: "Scegli la copia delle impostazioni",
+    properties: ["openFile"],
+    filters: [{ name: "Impostazioni", extensions: ["json"] }]
+  });
+  if (scelta.canceled || !scelta.filePaths.length) return null;
+
+  let contenuto = null;
+  try {
+    contenuto = JSON.parse(fs.readFileSync(scelta.filePaths[0], "utf8"));
+  } catch {
+    throw new Error("Il file non e una copia valida delle impostazioni.");
+  }
+  const nuove = contenuto && contenuto.impostazioni;
+  if (!nuove || typeof nuove !== "object") throw new Error("Il file non contiene impostazioni.");
+
+  // Si applicano solo le chiavi che l'app conosce davvero: un file di una
+  // versione diversa non deve poter iniettare voci sconosciute.
+  const ammesse = {};
+  for (const chiave of Object.keys(store.DEFAULTS)) {
+    if (NON_ESPORTABILI.includes(chiave)) continue;
+    if (nuove[chiave] !== undefined) ammesse[chiave] = nuove[chiave];
+  }
+  store.setImpostazioni(ammesse);
+  annota("impostazioni-importate", { oggetto: path.basename(scelta.filePaths[0]), dettaglio: `${Object.keys(ammesse).length} voci` });
+  avviaPolling();
+  return Object.keys(ammesse).length;
+})()));
+
+/* --- Diagnostica ---------------------------------------------------------
+ * Quello che serve alla prima domanda dell'assistenza — "che versione hai, il
+ * server risponde, dove sono i file?" — senza far aprire il prompt a nessuno.
+ * ---------------------------------------------------------------------- */
+
+ipcMain.handle("app:diagnostica", () => risultato((async () => {
+  const impostazioni = store.getImpostazioni();
+  const sessione = store.getSessione();
+
+  let latenza = null;
+  let raggiungibile = false;
+  let dettaglioRete = "";
+  const partenza = Date.now();
+  try {
+    const risposta = await fetch(`${String(impostazioni.baseUrl).replace(/\/+$/, "")}/api/health`, {
+      method: "GET",
+      headers: { "User-Agent": api.USER_AGENT },
+      signal: AbortSignal.timeout(8000)
+    });
+    latenza = Date.now() - partenza;
+    // Anche un 401 o un 404 dice quel che ci interessa: il server risponde.
+    raggiungibile = risposta.status < 500;
+    dettaglioRete = `HTTP ${risposta.status}`;
+  } catch (errore) {
+    latenza = Date.now() - partenza;
+    dettaglioRete = errore.name === "TimeoutError" ? "nessuna risposta entro 8 secondi" : errore.message;
+  }
+
+  return {
+    versione: app.getVersion(),
+    electron: process.versions.electron,
+    chrome: process.versions.chrome,
+    node: process.versions.node,
+    piattaforma: `${process.platform} ${process.arch}`,
+    baseUrl: impostazioni.baseUrl,
+    raggiungibile,
+    latenza,
+    dettaglioRete,
+    deviceId: sessione.deviceId,
+    cifratura: store.cifraturaDisponibile(),
+    silenzio: silenzioAttivo(),
+    cartellaDati: app.getPath("userData"),
+    registro: registro.percorso(),
+    aggiornamento: aggiornamenti.stato()
+  };
+})()));
+
+ipcMain.handle("app:apri-cartella-dati", () => {
+  shell.openPath(app.getPath("userData"));
   return true;
 });
 

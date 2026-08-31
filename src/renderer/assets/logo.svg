@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Studio Associato Amm. Burchielli">
+  <defs>
+    <linearGradient id="sfondo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2f6fbd"/>
+      <stop offset="1" stop-color="#1b3f70"/>
+    </linearGradient>
+    <linearGradient id="lastra" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".97"/>
+      <stop offset="1" stop-color="#dbe7f7" stop-opacity=".92"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="url(#sfondo)"/>
+  <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="1"/>
+
+  <!-- Palazzo: lo Studio amministra condomini, il marchio lo dice senza scriverlo -->
+  <path d="M17 47V22l15-8 15 8v25z" fill="url(#lastra)"/>
+  <path d="M17 47V22l15-8 15 8v25" fill="none" stroke="#0f2b4d" stroke-opacity=".18" stroke-width="1.2" stroke-linejoin="round"/>
+
+  <g fill="#2f6fbd" fill-opacity=".85">
+    <rect x="22" y="26" width="6" height="6" rx="1.2"/>
+    <rect x="36" y="26" width="6" height="6" rx="1.2"/>
+    <rect x="22" y="36" width="6" height="6" rx="1.2"/>
+    <rect x="36" y="36" width="6" height="6" rx="1.2"/>
+  </g>
+
+  <rect x="29.5" y="38" width="5" height="9" rx="1.4" fill="#1b3f70" fill-opacity=".9"/>
+  <rect x="14" y="47" width="36" height="4" rx="1.6" fill="#ffffff" fill-opacity=".95"/>
+</svg>

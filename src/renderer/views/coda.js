@@ -12,6 +12,7 @@ import {
   el, svuota, api, cached, toast, dataOra, daQuando, pastigliaStato, pastigliaPriorita,
   STATI, PRIORITA, CANALI, STATI_APERTI, statoVuoto, caricamento, modale, conferma
 } from "../lib/ui.js";
+import { esportaCsv } from "../lib/esporta.js";
 
 const ORDINE_STATI = ["nuova", "presa_in_carico", "in_lavorazione", "in_attesa", "risolta", "chiusa"];
 
@@ -23,6 +24,7 @@ const FILTRI_INIZIALI = {
 export default async function monta(radice, ctx) {
   const stato = {
     filtri: { ...FILTRI_INIZIALI, ...(ctx.filtriIniziali || {}) },
+    vistaSalvata: (ctx.filtriIniziali || {}).vistaSalvata || "",
     tickets: [],
     totale: 0,
     indice: 0,
@@ -106,6 +108,111 @@ export default async function monta(radice, ctx) {
     onclick: () => { stato.filtri = { ...FILTRI_INIZIALI }; ricostruisciBarra(); carica(); }
   });
 
+  /* --- Viste salvate ------------------------------------------------------
+   * Ogni collega ha due o tre tagli della coda che rifa ogni giorno: "le mie
+   * urgenti", "quelle del Condominio Aurora", "in attesa da piu di una
+   * settimana". Salvarli una volta vale piu di sette tendine.
+   * ---------------------------------------------------------------------- */
+
+  const selViste = el("select", { class: "campo", title: "Viste salvate" });
+
+  function vistiSalvate() {
+    return ctx.impostazioni.filtriSalvati || [];
+  }
+
+  function ricostruisciViste() {
+    svuota(selViste).append(
+      el("option", { value: "", text: "— Viste salvate —" }),
+      ...vistiSalvate().map((v) => el("option", { value: v.id, text: v.nome, selected: v.id === stato.vistaSalvata }))
+    );
+  }
+
+  selViste.addEventListener("change", () => {
+    const vista = vistiSalvate().find((v) => v.id === selViste.value);
+    if (!vista) return;
+    stato.filtri = { ...FILTRI_INIZIALI, ...vista.filtri, page: 1 };
+    stato.vistaSalvata = vista.id;
+    ricostruisciBarra();
+    carica();
+  });
+
+  async function salvaVista() {
+    const nome = el("input", { class: "campo largo", placeholder: "Per esempio: le mie urgenti" });
+    modale({
+      titolo: "Salva questa vista",
+      contenuto: el("div", { class: "colonna" }, [
+        el("label", { class: "campo-etichetta" }, [el("span", { text: "Nome della vista" }), nome]),
+        el("p", { class: "sotto", text: "Vengono salvati i filtri attuali (stato, priorita, canale, condominio, assegnazione, ordinamento e testo cercato). La vista compare anche nel comando rapido." })
+      ]),
+      azioni: [
+        { testo: "Annulla", azione: (chiudi) => chiudi() },
+        {
+          testo: "Salva", primaria: true,
+          azione: async (chiudi) => {
+            const etichetta = nome.value.trim();
+            if (!etichetta) return;
+            chiudi();
+            const vista = {
+              id: `v${Date.now().toString(36)}`,
+              nome: etichetta,
+              filtri: { ...stato.filtri, page: 1 }
+            };
+            const elenco = [...vistiSalvate().filter((v) => v.nome !== etichetta), vista];
+            ctx.impostazioni.filtriSalvati = elenco;
+            await window.studio.impostazioni({ filtriSalvati: elenco });
+            window.studio.annota({ azione: "vista-salvata", oggetto: etichetta });
+            stato.vistaSalvata = vista.id;
+            ricostruisciViste();
+            toast("Vista salvata: la trovi anche con Ctrl+K.", "ok");
+          }
+        }
+      ]
+    });
+  }
+
+  async function eliminaVista() {
+    const vista = vistiSalvate().find((v) => v.id === selViste.value);
+    if (!vista) {
+      toast("Scegli prima una vista salvata.", "avviso");
+      return;
+    }
+    if (!(await conferma(`Eliminare la vista "${vista.nome}"?`))) return;
+    const elenco = vistiSalvate().filter((v) => v.id !== vista.id);
+    ctx.impostazioni.filtriSalvati = elenco;
+    await window.studio.impostazioni({ filtriSalvati: elenco });
+    window.studio.annota({ azione: "vista-rimossa", oggetto: vista.nome });
+    stato.vistaSalvata = "";
+    ricostruisciViste();
+    toast("Vista eliminata.", "ok");
+  }
+
+  const bottoneSalvaVista = el("button", { class: "bottone", text: "★ Salva vista", title: "Salva i filtri attuali", onclick: salvaVista });
+  const bottoneEliminaVista = el("button", { class: "bottone piccolo", text: "✕", title: "Elimina la vista scelta", onclick: eliminaVista });
+
+  /* --- Esportazione ------------------------------------------------------- */
+
+  const bottoneEsporta = el("button", {
+    class: "bottone", text: "Esporta CSV", title: "Le righe visibili, pronte per Excel",
+    onclick: () => esportaCsv("coda-segnalazioni", stato.tickets, [
+      { titolo: "Numero", valore: (t) => t.ticket_number },
+      { titolo: "Oggetto", valore: (t) => t.subject },
+      { titolo: "Categoria", valore: (t) => t.category_label || "" },
+      { titolo: "Canale", valore: (t) => CANALI[t.channel] || t.channel },
+      { titolo: "Condominio", valore: (t) => t.condominio_nome || "" },
+      { titolo: "Richiedente", valore: (t) => t.client_name || t.contact_name || "" },
+      { titolo: "Email richiedente", valore: (t) => t.client_email || t.contact_email || "" },
+      { titolo: "Stato", valore: (t) => STATI[t.status] || t.status },
+      { titolo: "Priorita", valore: (t) => PRIORITA[t.priority] || t.priority },
+      { titolo: "Assegnata a", valore: (t) => t.assigned_name || "" },
+      { titolo: "Aperta il", valore: (t) => dataOra(t.created_at) },
+      { titolo: "Aggiornata il", valore: (t) => dataOra(t.updated_at) }
+    ])
+  });
+
+  // `vistaSalvata` viaggia con i parametri di navigazione ma non e un filtro:
+  // fuori dai filtri prima che qualcuno lo spedisca al server.
+  delete stato.filtri.vistaSalvata;
+
   function ricostruisciBarra() {
     campoRicerca.value = stato.filtri.q;
     selStato.value = stato.filtri.status;
@@ -114,9 +221,16 @@ export default async function monta(radice, ctx) {
     selCondominio.value = stato.filtri.condominioId;
     selAssegnate.value = stato.filtri.assegnate;
     selOrdine.value = stato.filtri.sortBy;
+    selViste.value = stato.vistaSalvata || "";
   }
 
-  barra.append(campoRicerca, selStato, selPriorita, selCanale, selCondominio, selAssegnate, selOrdine, bottoneAggiorna, bottoneAzzera);
+  barra.append(
+    campoRicerca, selStato, selPriorita, selCanale, selCondominio, selAssegnate, selOrdine,
+    bottoneAggiorna, bottoneAzzera,
+    el("span", { class: "spazio" }),
+    selViste, bottoneEliminaVista, bottoneSalvaVista, bottoneEsporta
+  );
+  ricostruisciViste();
 
   /* --- Caricamento -------------------------------------------------------- */
 
