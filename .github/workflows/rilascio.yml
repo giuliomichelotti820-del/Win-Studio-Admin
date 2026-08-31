@@ -1,0 +1,86 @@
+# =============================================================================
+# Pubblicazione automatica dell'app
+#
+# A ogni push sul ramo principale questo flusso alza il numero di versione,
+# compila l'installer per Windows e lo pubblica fra le Release del repository.
+# Da li lo raccoglie electron-updater: le copie installate sui computer dello
+# Studio trovano la nuova versione entro un'ora, la scaricano in sottofondo e
+# la installano alla chiusura.
+#
+# Il commit di versione porta [skip ci] per non innescare un secondo giro.
+# Con `workflow_dispatch` la pubblicazione si puo forzare a mano, scegliendo se
+# alzare patch, minor o major.
+# =============================================================================
+
+name: Rilascio Windows
+
+on:
+  push:
+    branches: [main, master]
+    paths-ignore:
+      - "README.md"
+      - ".github/**"
+  workflow_dispatch:
+    inputs:
+      incremento:
+        description: "Parte di versione da alzare"
+        type: choice
+        default: patch
+        options: [patch, minor, major]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rilascio
+  cancel-in-progress: false
+
+jobs:
+  pubblica:
+    runs-on: windows-latest
+
+    steps:
+      - name: Scarica il codice
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Salta i commit di versione
+        id: controllo
+        shell: bash
+        run: |
+          messaggio=$(git log -1 --pretty=%s)
+          if [[ "$messaggio" == *"[skip ci]"* ]]; then
+            echo "salta=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "salta=no" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Prepara Node
+        if: steps.controllo.outputs.salta == 'no'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Installa le dipendenze
+        if: steps.controllo.outputs.salta == 'no'
+        run: npm ci
+
+      - name: Alza la versione
+        if: steps.controllo.outputs.salta == 'no'
+        id: versione
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          nuova=$(npm version ${{ inputs.incremento || 'patch' }} -m "Versione %s [skip ci]")
+          echo "tag=$nuova" >> "$GITHUB_OUTPUT"
+          git push origin HEAD --follow-tags
+
+      - name: Compila e pubblica l'installer
+        if: steps.controllo.outputs.salta == 'no'
+        run: npx electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
