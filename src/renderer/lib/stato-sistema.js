@@ -201,9 +201,11 @@ async function sondaSessione(ctx) {
       `Sessione valida per ${me && me.fullName ? me.fullName : ctx.utente.fullName}.`
     )];
   } catch (errore) {
+    // Sessione scaduta o server che rifiuta: in entrambi i casi da qui non si
+    // lavora piu, quindi e rosso. Cambia solo che cosa c'e da fare, e lo dice
+    // il pulsante della riga.
     return [sonda(
-      "Collegamento", "API dello Studio",
-      errore.status === 401 ? "guasto" : "guasto",
+      "Collegamento", "API dello Studio", "guasto",
       errore.status === 401 ? "sessione scaduta" : "errore",
       errore.message,
       errore.status === 401
