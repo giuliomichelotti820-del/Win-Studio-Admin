@@ -53,13 +53,26 @@ export const SCORCIATOIE = [
   { id: "silenzio", combo: "ctrl+shift+d", gruppo: "Postazione", tasti: "Ctrl + Shift + D", descrizione: "Accendi o spegni il «non disturbare»" },
   { id: "aggiorna-notifiche", combo: "ctrl+shift+u", gruppo: "Postazione", tasti: "Ctrl + Shift + U", descrizione: "Controlla adesso se ci sono novita" },
   { id: "richiamo", combo: null, gruppo: "Postazione", tasti: "Ctrl + Alt + S", descrizione: "Richiama Win Studio Admin da qualunque programma di Windows", nota: "Vale in tutto il sistema" },
+  { id: "promemoria", combo: "ctrl+shift+r", gruppo: "Postazione", tasti: "Ctrl + Shift + R", descrizione: "Prendi un promemoria: avviso di Windows all'ora che scegli" },
+  { id: "zoom-piu", combo: "ctrl+=", alias: ["ctrl++"], gruppo: "Postazione", tasti: "Ctrl + +", descrizione: "Ingrandisci l'interfaccia di un gradino" },
+  { id: "zoom-meno", combo: "ctrl+-", gruppo: "Postazione", tasti: "Ctrl + −", descrizione: "Rimpicciolisci l'interfaccia di un gradino" },
+  { id: "zoom-zero", combo: "ctrl+0", gruppo: "Postazione", tasti: "Ctrl + 0", descrizione: "Riporta l'interfaccia al 100%" },
 
   /* --- Navigazione -------------------------------------------------------- */
   { id: "indietro", combo: "alt+arrowleft", gruppo: "Navigazione", tasti: "Alt + ←", descrizione: "Torna alla sezione precedente" },
   { id: "avanti", combo: "alt+arrowright", gruppo: "Navigazione", tasti: "Alt + →", descrizione: "Vai avanti nella cronologia" },
   { id: "sezione-numero", combo: null, gruppo: "Navigazione", tasti: "Ctrl + 1 … 9", descrizione: "Salta alle prime nove sezioni della barra laterale" },
   { id: "vai-a", combo: null, gruppo: "Navigazione", tasti: "G poi lettera", descrizione: "«Vai a»: premi G, lascia, premi l'iniziale della sezione" },
-  { id: "chiudi", combo: null, gruppo: "Navigazione", tasti: "Esc", descrizione: "Chiudi finestra, comando rapido, tendina o selezione" }
+  { id: "chiudi", combo: null, gruppo: "Navigazione", tasti: "Esc", descrizione: "Chiudi finestra, comando rapido, tendina o selezione" },
+
+  /* --- Schede di lavoro ---------------------------------------------------
+   * Sono le stesse combinazioni di un browser, di proposito: chi apre otto
+   * pratiche insieme le conosce gia da vent'anni e non deve impararle qui. */
+  { id: "scheda-avanti", combo: "ctrl+tab", gruppo: "Schede di lavoro", tasti: "Ctrl + Tab", descrizione: "Passa alla scheda seguente" },
+  { id: "scheda-indietro", combo: "ctrl+shift+tab", gruppo: "Schede di lavoro", tasti: "Ctrl + Shift + Tab", descrizione: "Passa alla scheda precedente" },
+  { id: "scheda-chiudi", combo: "ctrl+w", gruppo: "Schede di lavoro", tasti: "Ctrl + W", descrizione: "Chiudi la scheda su cui stai lavorando" },
+  { id: "scheda-fissa", combo: null, gruppo: "Schede di lavoro", tasti: "Doppio clic", descrizione: "Fissa una linguetta: resta anche quando chiudi tutto il resto" },
+  { id: "scheda-chiudi-mouse", combo: null, gruppo: "Schede di lavoro", tasti: "Tasto centrale", descrizione: "Chiudi la linguetta sotto il puntatore" }
 ];
 
 /* --- La famiglia «vai a» --------------------------------------------------

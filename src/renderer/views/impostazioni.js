@@ -54,28 +54,101 @@ export default async function monta(radice, ctx) {
     })
   ]));
 
-  /* --- Aggiornamenti ----------------------------------------------------- */
+  /* --- Aggiornamenti -------------------------------------------------------
+   * Il giro e questo, e la scheda lo racconta per intero perche e l'unica
+   * cosa che qualcuno vuole sapere quando chiede "ma si e aggiornata?":
+   *
+   *   push sul repository -> il flusso di GitHub alza la versione, compila
+   *   l'installer e lo pubblica fra le Release -> l'app se ne accorge entro
+   *   un'ora, scarica in sottofondo, installa alla chiusura.
+   *
+   * Da qui si puo forzare ogni passaggio a mano: controllare adesso, scaricare
+   * adesso, riavviare adesso. Chi ha appena pubblicato non deve aspettare
+   * l'ora tonda per vedere se ha funzionato.
+   * ---------------------------------------------------------------------- */
 
   const statoAggiornamento = el("div", { class: "colonna" }, [caricamento("Controllo…")]);
 
   const DESCRIZIONI = {
     controllo: "Sto cercando una versione piu recente…",
+    disponibile: "C'e una versione nuova, non ancora scaricata.",
     scaricamento: "Sto scaricando la nuova versione in sottofondo.",
-    pronta: "La nuova versione e pronta: viene installata alla chiusura dell'app.",
+    pronta: "La nuova versione e pronta: si installa alla chiusura dell'app, o subito da qui.",
     aggiornata: "Questa e l'ultima versione pubblicata.",
     errore: "L'ultimo controllo non e riuscito.",
-    sviluppo: "Avvio da sorgente: l'aggiornamento automatico vale solo sull'app installata.",
-    "non-configurato": "Aggiornamento automatico non disponibile in questa installazione.",
+    sviluppo: "Avvio da sorgente (npm start): l'aggiornamento automatico vale solo sull'app installata.",
+    "non-configurato": "Questa installazione non sa da dove prendere gli aggiornamenti.",
     sconosciuto: "Nessun controllo ancora eseguito."
   };
 
+  // Ogni fase ha un colore e basta: verde per "a posto", arancio per "c'e
+  // qualcosa da fare", rosso per "non ha funzionato".
+  const CLASSI = {
+    aggiornata: "ok", pronta: "pronta", disponibile: "disponibile",
+    scaricamento: "disponibile", errore: "guasta"
+  };
+
+  function peso(byte) {
+    if (!byte) return "";
+    const mega = byte / (1024 * 1024);
+    return mega >= 1 ? `${mega.toFixed(1)} MB` : `${Math.round(byte / 1024)} kB`;
+  }
+
+  const scaricamentoAutomatico = el("input", { type: "checkbox", checked: impostazioni.aggiornamentiAutomatici !== false });
+  scaricamentoAutomatico.addEventListener("change", async () => {
+    await window.studio.aggiornamentiAutomatici(scaricamentoAutomatico.checked);
+    impostazioni.aggiornamentiAutomatici = scaricamentoAutomatico.checked;
+    toast(scaricamentoAutomatico.checked
+      ? "Le nuove versioni si scaricano da sole."
+      : "D'ora in poi l'app avvisa e aspetta il tuo via.", "ok");
+    disegnaAggiornamento();
+  });
+
   async function disegnaAggiornamento(dati) {
     const info = dati || (await window.studio.statoAggiornamento());
+    const fase = info.fase || "sconosciuto";
+    const attivo = !["sviluppo", "non-configurato"].includes(fase);
+
     aggiungi(svuota(statoAggiornamento),
-      el("p", { text: DESCRIZIONI[info.fase] || info.fase }),
-      info.versione && info.fase !== "aggiornata" ? el("p", { class: "sotto", text: `Versione trovata: ${info.versione}` }) : null,
-      info.fase === "scaricamento" ? el("p", { class: "sotto", text: `${info.percentuale || 0}% scaricato` }) : null,
+      el("div", { class: `aggiornamento-riga ${CLASSI[fase] || ""}` }, [
+        el("span", { class: `stato-pallino ${
+          fase === "errore" ? "stato-guasto"
+            : fase === "pronta" || fase === "aggiornata" ? "stato-ok"
+            : fase === "disponibile" || fase === "scaricamento" ? "stato-avviso"
+            : "stato-ignoto"}` }),
+        el("div", { class: "colonna" }, [
+          el("strong", { text: DESCRIZIONI[fase] || fase }),
+          el("span", { class: "sotto", text: info.versione && fase !== "aggiornata"
+            ? `Versione trovata: ${info.versione} · installata: ${info.versioneInstallata || ctx.versione}`
+            : `Versione installata: ${info.versioneInstallata || ctx.versione}` })
+        ])
+      ]),
+
+      fase === "scaricamento"
+        ? el("div", {}, [
+            el("div", { class: "avanzamento" }, [avanzamento(info.percentuale || 0)]),
+            el("p", { class: "sotto", text: `${info.percentuale || 0}%`
+              + (info.byteTotali ? ` · ${peso(info.byteScaricati)} di ${peso(info.byteTotali)}` : "")
+              + (info.velocita ? ` · ${peso(info.velocita)}/s` : "") })
+          ])
+        : null,
+
       info.errore ? el("p", { class: "errore", text: info.errore }) : null,
+
+      el("dl", { class: "dati" }, [
+        el("dt", { text: "Versioni pubblicate su" }),
+        el("dd", { text: info.origine || "non configurato" }),
+        el("dt", { text: "Ultimo controllo" }),
+        el("dd", { text: info.ultimoControllo ? dataOra(info.ultimoControllo) : "mai in questa sessione" }),
+        el("dt", { text: "Ritmo del controllo" }),
+        el("dd", { text: attivo ? "all'avvio e poi ogni ora" : "spento" })
+      ]),
+
+      el("label", { class: "campo-inline" }, [
+        scaricamentoAutomatico,
+        el("span", { text: "Scarica da sola le versioni nuove, senza chiedere" })
+      ]),
+
       el("div", { class: "toolbar" }, [
         el("button", {
           class: "bottone", text: "Controlla adesso",
@@ -83,23 +156,161 @@ export default async function monta(radice, ctx) {
             svuota(statoAggiornamento).appendChild(caricamento("Controllo…"));
             const esito = await window.studio.controllaAggiornamento();
             disegnaAggiornamento(esito.ok ? esito.dati : null);
+            if (!esito.ok) toast(esito.errore || "Controllo non riuscito.", "errore");
           }
         }),
-        info.fase === "pronta"
-          ? el("button", { class: "bottone primario", text: "Riavvia e aggiorna", onclick: () => window.studio.installaAggiornamento() })
+
+        // "Scarica adesso" compare quando c'e davvero qualcosa da scaricare:
+        // un bottone che non fa niente e peggio di un bottone che non c'e.
+        ["disponibile", "errore"].includes(fase) && info.versione
+          ? el("button", {
+              class: "bottone primario", text: `Scarica la versione ${info.versione}`,
+              onclick: async () => {
+                toast("Scaricamento avviato.", "ok");
+                await window.studio.scaricaAggiornamento();
+              }
+            })
+          : null,
+
+        fase === "pronta"
+          ? el("button", {
+              class: "bottone primario", text: "Riavvia e installa adesso",
+              onclick: () => window.studio.installaAggiornamento()
+            })
+          : null,
+
+        info.origine
+          ? el("button", {
+              class: "bottone fantasma", text: "Vedi le versioni su GitHub",
+              onclick: () => window.studio.noteAggiornamento()
+            })
           : null
-      ])
+      ]),
+
+      !attivo
+        ? el("p", { class: "accesso-nota", text: fase === "sviluppo"
+            ? "Stai lavorando sul codice sorgente: qui non c'e un pacchetto da sostituire. L'aggiornamento automatico si prova sull'app installata dall'installer."
+            : "L'app non trova la sezione di pubblicazione (build.publish di package.json) o non e stata installata dall'installer. Reinstallala dall'ultima Release del repository." })
+        : null
     );
+  }
+
+  /* La barra di avanzamento non usa <progress>: quello di Windows non si puo
+   * colorare, e in una schermata di questo tipo un elemento con un aspetto
+   * tutto suo si nota come un errore. */
+  function avanzamento(percentuale) {
+    const barra = el("span");
+    barra.style.width = `${Math.max(0, Math.min(100, percentuale))}%`;
+    return barra;
   }
 
   radice.appendChild(el("section", { class: "riquadro stretto" }, [
     el("h2", { text: "Aggiornamenti" }),
-    el("p", { class: "sotto", text: "Ogni pubblicazione sul repository dello Studio diventa una nuova versione: l'app la cerca da sola ogni ora, la scarica in sottofondo e la installa alla chiusura." }),
+    el("p", { class: "sotto", text: "Ogni pubblicazione sul repository dello Studio diventa una nuova versione: il flusso di GitHub compila l'installer e lo mette fra le Release, l'app lo trova entro un'ora, lo scarica in sottofondo e lo installa alla chiusura. Nessun aggiornamento parte mentre stai scrivendo a un condomino." }),
     statoAggiornamento
   ]));
 
   const staccaAggiornamento = window.studio.su("app:aggiornamento", (dati) => disegnaAggiornamento(dati));
   disegnaAggiornamento();
+
+  /* --- Copie di sicurezza --------------------------------------------------
+   * Una parte dei dati non sta sul server: le schede di condominio e di
+   * condomino, i file che ci sono attaccati, i promemoria, il registro locale.
+   * Se il disco si rompe, quella roba non torna da nessuna parte.
+   * ---------------------------------------------------------------------- */
+
+  const elencoCopie = el("div", { class: "colonna" }, [caricamento("Leggo le copie…")]);
+  const copieAutomatiche = el("input", { type: "checkbox", checked: impostazioni.copieAutomatiche !== false });
+  const copieDaTenere = el("input", { class: "campo", type: "number", min: "2", max: "60", value: String(impostazioni.copieDaTenere || 10) });
+
+  copieAutomatiche.addEventListener("change", () => {
+    window.studio.impostazioni({ copieAutomatiche: copieAutomatiche.checked });
+    impostazioni.copieAutomatiche = copieAutomatiche.checked;
+  });
+  copieDaTenere.addEventListener("change", () => {
+    const quante = Math.max(2, Math.min(60, Number(copieDaTenere.value) || 10));
+    copieDaTenere.value = String(quante);
+    window.studio.impostazioni({ copieDaTenere: quante });
+    impostazioni.copieDaTenere = quante;
+  });
+
+  function pesoCopia(byte) {
+    const mega = (byte || 0) / (1024 * 1024);
+    return mega >= 1 ? `${mega.toFixed(1)} MB` : `${Math.round((byte || 0) / 1024)} kB`;
+  }
+
+  async function caricaCopie() {
+    svuota(elencoCopie).appendChild(caricamento("Leggo le copie…"));
+    const esito = await window.studio.copie();
+    svuota(elencoCopie);
+    const copie = (esito.ok && esito.dati) || [];
+    if (!copie.length) {
+      elencoCopie.appendChild(statoVuoto("Nessuna copia ancora.", "La prima parte da sola pochi secondi dopo l'avvio."));
+      return;
+    }
+    for (const copia of copie) {
+      elencoCopie.appendChild(el("div", { class: "copia-riga" }, [
+        el("div", { class: "colonna" }, [
+          el("strong", { text: dataOra(copia.creataIl) }),
+          el("span", { class: "sotto", text: `${copia.motivo === "automatica" ? "automatica" : copia.motivo} · ${pesoCopia(copia.peso)} · ${(copia.contenuto || []).length} elementi` })
+        ]),
+        el("div", { class: "azioni" }, [
+          el("button", {
+            class: "bottone piccolo", text: "Apri la cartella",
+            onclick: () => window.studio.mostraNellaCartella(copia.percorso)
+          }),
+          el("button", {
+            class: "bottone piccolo", text: "Ripristina",
+            onclick: async () => {
+              const esitoRipristino = await window.studio.copiaRipristina(copia.percorso);
+              if (esitoRipristino.ok === false) toast(esitoRipristino.errore || "Ripristino non riuscito.", "errore");
+            }
+          }),
+          el("button", {
+            class: "bottone piccolo pericolo", text: "Elimina",
+            onclick: async () => {
+              if (!(await conferma(`Elimino la copia del ${dataOra(copia.creataIl)}?`))) return;
+              await window.studio.copiaRimuovi(copia.nome);
+              caricaCopie();
+            }
+          })
+        ])
+      ]));
+    }
+  }
+
+  radice.appendChild(el("section", { class: "riquadro stretto" }, [
+    el("h2", { text: "Copie di sicurezza dei dati locali" }),
+    el("p", { class: "sotto", text: "Schede di condominio e di condomino, file allegati, promemoria, registro della postazione e viste salvate: sono i dati che esistono solo su questo computer. Una copia e una cartella normale — si apre con Esplora file e si porta via su una chiavetta." }),
+    el("p", { class: "accesso-nota", text: "Nelle copie non finiscono mai la sessione, il PIN e la chiave dell'applicazione: sono legati a questo profilo Windows, e una copia e fatta per essere portata altrove." }),
+    el("label", { class: "campo-inline" }, [copieAutomatiche, el("span", { text: "Fai una copia al giorno, alla prima apertura" })]),
+    el("label", { class: "campo-etichetta" }, [el("span", { text: "Quante copie tenere" }), copieDaTenere]),
+    el("div", { class: "toolbar" }, [
+      el("button", {
+        class: "bottone", text: "Fai una copia adesso",
+        onclick: async () => {
+          const esito = await window.studio.copiaCrea();
+          toast(esito.ok ? "Copia creata." : (esito.errore || "Copia non riuscita."), esito.ok ? "ok" : "errore");
+          caricaCopie();
+        }
+      }),
+      el("button", {
+        class: "bottone", text: "Salva una copia altrove…",
+        onclick: async () => {
+          const esito = await window.studio.copiaEsporta();
+          if (esito.ok && esito.dati && !esito.dati.annullato) toast("Copia salvata.", "ok");
+          else if (!esito.ok) toast(esito.errore || "Copia non riuscita.", "errore");
+        }
+      }),
+      el("button", {
+        class: "bottone fantasma", text: "Ripristina da una cartella…",
+        onclick: () => window.studio.copiaRipristina(null)
+      })
+    ]),
+    elencoCopie
+  ]));
+
+  caricaCopie();
 
   /* --- Sicurezza della postazione -----------------------------------------
    * Lo Studio tratta dati di condomini, morosita e fornitori: una postazione

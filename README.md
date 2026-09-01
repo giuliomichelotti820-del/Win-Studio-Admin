@@ -18,6 +18,7 @@ qui si vede subito nell'area riservata, e viceversa.
 | --- | --- |
 | **Panoramica** | Numeri della giornata, scadenze operative, attività dello staff. Ogni riquadro apre la coda già filtrata. |
 | **Coda segnalazioni** | Elenco denso di tutte le pratiche, con filtri, ricerca, selezione multipla e azioni di massa. |
+| **Promemoria** | Gli impegni presi su questa postazione — «richiamare l'idraulico giovedì alle nove» — con l'avviso di Windows all'ora scelta, anche a finestra chiusa. |
 | **Scheda pratica** | Testo, conversazione con il condomino, note interne, storico stati, assegnazione, priorità, fornitore, allegati. |
 | **Archivio** | Documenti del condominio (sul server) e schede di dettaglio di condominio e singolo condomino (su questo computer). |
 | **Condomini** | Anagrafica stabili, carico di lavoro, morosità del condominio, avvisi allo stabile. |
@@ -32,8 +33,43 @@ qui si vede subito nell'area riservata, e viceversa.
 | **Impostazioni** | Collegamento, sicurezza della postazione, PIN rapido, orari degli avvisi, copia della configurazione, diagnostica. |
 | **Guida del programma** | Manuale completo dentro l'app: sedici capitoli con indice, ricerca a testo pieno, aiuto contestuale (`Maiusc+F1`) ed esportazione in testo. |
 
+## Il marchio
+
+L'app usa il **marchio ufficiale dello Studio**, non una sua interpretazione: è
+lo stesso file vettoriale del sito (`assets/img/logo-mark.svg` di
+`Sito-Amm.Burch`), con la stessa geometria, gli stessi sfumati e gli stessi tre
+colori — blu notte `#0B2341`, verde `#2E7A50`, arancio `#E8843D`.
+
+Tre risorse, tre usi distinti, in `src/renderer/assets/`:
+
+| File | Dove si usa | Perché così |
+| --- | --- | --- |
+| `marchio.svg` | superfici chiare | il simbolo nudo: la «A» blu notte si legge solo su fondo chiaro |
+| `logo.svg` | barra dei titoli, laterale, icona di Windows | lo stesso simbolo in una tessera chiara — è anche l'icona che Windows mostra sulla barra delle applicazioni, così il simbolo dell'app e quello dell'icona coincidono ovunque |
+| `marchio-esteso.svg` | accesso e blocco | il lockup completo con ragione sociale e attività, dove c'è spazio per leggerlo per intero |
+
+Le risorse binarie — icona di Windows a sette risoluzioni, icona dell'area di
+notifica, le due immagini dell'installer — **non sono disegnate a mano**: le
+genera `build/genera-marchio.py` dal marchio ufficiale del sito. Se il marchio
+dello Studio cambia si rilancia quello, non si rincorrono venti file.
+
+```bash
+pip install pillow
+python3 build/genera-marchio.py            # cerca ../Sito-Amm.Burch
+python3 build/genera-marchio.py /percorso/del/sito
+```
+
+Anche la **tavolozza** viene da lì. Non sono grigi neutri: sono i tre colori del
+marchio portati alle luminosità che servono su fondo scuro, gli stessi della
+console web dello Studio (`admin.css` del sito). L'arancio comanda le azioni, il
+verde conferma, il blu notte regge le superfici. Chi passa dal browser all'app
+non cambia prodotto, cambia finestra.
+
 ## Pensata per il volume
 
+- **Schede di lavoro**: fino a dodici pratiche aperte insieme, come su un
+  browser — `Ctrl+Tab` per girare, `Ctrl+W` per chiudere, doppio clic per
+  fissare una linguetta. Le pratiche aperte si ritrovano al riavvio.
 - **Comando rapido** `Ctrl+K`: sezioni, filtri pronti e ricerca di una pratica per numero, oggetto o richiedente.
 - **Coda da tastiera**: `j`/`k` scorri, `Invio` apri, `Spazio` seleziona, `1`–`6` cambia stato, `A` assegna a te, `U` togli assegnazione, `/` cerca, `R` aggiorna.
 - **Azioni di massa**: stato, priorità e assegnazione su decine di pratiche in un gesto solo.
@@ -44,24 +80,116 @@ qui si vede subito nell'area riservata, e viceversa.
 - `Ctrl+1`…`Ctrl+9` saltano alle prime nove sezioni, `Ctrl+B` comprime la barra laterale, `Alt+←` e `Alt+→` percorrono la cronologia, `Ctrl+/` mostra tutte le scorciatoie con la ricerca, `F1` apre la guida.
 - **Viste salvate**: i tagli della coda che si rifanno ogni giorno ("le mie urgenti", "in attesa da una settimana") si salvano con un nome e tornano nella tendina e nel comando rapido.
 - **Esportazione in CSV**: coda e registro finiscono in Excel con un clic, separatore e accenti già giusti per Excel italiano.
+- **Stampa della pratica in PDF** su carta intestata dello Studio: marchio,
+  dati, conversazione, storico e numeri di pagina. È il documento che si allega
+  a un preventivo o si porta in assemblea, non una schermata di gestionale.
+- **Ingrandimento dell'interfaccia** `Ctrl +` / `Ctrl -` / `Ctrl 0`, ricordato
+  per postazione: dipende dal monitor che c'è sulla scrivania, non dall'account.
 
 ## Interfaccia
 
 L'aspetto è quello di un gestionale da postazione fissa, non di una pagina web
 messa in una finestra:
 
+Cinque fasce, dall'alto in basso, e non si spostano mai:
+
+- **Barra dei titoli dello Studio** al posto di quella di Windows. Non è
+  decorazione: dice **a quale server sei collegato**, cosa che la barra di
+  sistema non può dire, e se non è quello di produzione diventa arancione e lo
+  scrive. Chiudere una pratica sul collaudo credendo di essere in produzione si
+  scopre il giorno dopo, dal condomino che richiama. In più restituisce
+  l'altezza di due righe di coda.
+- **Testata di contesto** con percorso della sezione, avanti e indietro,
+  ricerca globale, promemoria rapido, spia del collegamento, **menu a tendina
+  dello stato del sistema**, notifiche non lette, cambio tema e guida.
+- **Nastro delle schede di lavoro**, che compare quando ne hai almeno due.
 - **Navigazione raggruppata** per mestiere — Operatività, Anagrafiche,
   Comunicazioni, Amministrazione — comprimibile a sole icone con `Ctrl+B`.
-- **Testata di contesto** con percorso della sezione, ricerca globale, spia del
-  collegamento, **menu a tendina dello stato del sistema**, notifiche non lette,
-  cambio tema e guida.
 - **Barra di stato** sempre visibile: chi è collegato, a quale server, quando è
-  arrivato l'ultimo aggiornamento, se gli avvisi sono silenziati, quale
-  versione è installata.
-- **Tema chiaro e scuro** curati entrambi, con due densità di elenco
+  arrivato l'ultimo aggiornamento, se gli avvisi sono silenziati, a che
+  ingrandimento sei, quale versione è installata.
+
+E poi:
+
+- **Icone disegnate**, non emoji. Un pittogramma di sistema cambia faccia a
+  ogni versione di Windows, non si può colorare e non si allinea con gli altri;
+  le icone di `lib/icone.js` sono tracciati che seguono `currentColor`, così la
+  voce di menu attiva le accende nell'arancio del marchio.
+- **Tema chiaro e scuro** curati entrambi — non l'uno schiarito dall'altro: sul
+  bianco l'arancio perde contrasto, quindi scende a una tostatura più scura e i
+  collegamenti tornano al blu dello Studio — con due densità di elenco
   (compatta per stare sulle righe, comoda per la lettura prolungata).
-- **Schermata di accesso dello Studio**, con il marchio, il nome dello Studio e
-  l'indirizzo del server a cui ci si sta collegando.
+- **Schermata di accesso dello Studio**, con il marchio per esteso, la riga di
+  attività e l'indirizzo del server a cui ci si sta collegando.
+
+## Schede di lavoro
+
+Una segnalazione non si lavora quasi mai da sola: si apre la pratica
+dell'infiltrazione, si va a vedere la scheda del condominio, si controlla il
+DURC dell'impresa, si torna alla pratica. Con una vista sola ogni salto costava
+il ritorno alla coda e la ricerca da capo — dieci volte al giorno, per anni.
+
+- Ogni apertura **è** una scheda: non esiste un «apri in una scheda nuova».
+- Fino a **dodici** insieme. Oltre, le linguette diventano illeggibili, e una
+  scheda che non si legge non è una scheda aperta, è disordine. Superato il
+  limite si chiude la più vecchia, mai quella su cui si sta lavorando.
+- Le **pratiche** aperte si ritrovano al riavvio; le sezioni no, perché la barra
+  laterale le raggiunge in un clic e riaprirle tutte farebbe del nastro un
+  secondo menu.
+- **Doppio clic** fissa una linguetta: resta anche quando si chiude tutto il
+  resto.
+- `Ctrl+Tab` e `Ctrl+Maiusc+Tab` girano, `Ctrl+W` chiude, il tasto centrale
+  chiude quella sotto il puntatore. Sono le combinazioni di un browser, di
+  proposito: chi apre otto pratiche insieme le conosce già da vent'anni.
+
+Una scheda conserva il **posto**, non lo stato della pagina: tornandoci i dati
+vengono richiesti di nuovo al server. È un bene — quello che si legge è sempre
+fresco — ma un modulo lasciato a metà non si ritrova, e le viste con del testo
+in lavorazione lo chiedono prima di lasciar cambiare scheda.
+
+## Promemoria
+
+«Richiamare l'idraulico giovedì alle nove» non è uno stato della pratica: è un
+impegno di una persona, a un'ora precisa. Finché non c'era un posto dove
+metterlo finiva su un foglietto, e il foglietto si perde.
+
+- Si prendono dalla sveglia in testata, da `Ctrl+Maiusc+R`, dal comando rapido
+  o **dal bottone dentro la scheda di una pratica** — e in quel caso l'avviso,
+  quando suona, riporta dentro quella pratica con un clic.
+- Le scorciatoie (fra un'ora, stasera, domani mattina, lunedì prossimo) coprono
+  quasi tutti i casi; la data per esteso resta lì sotto per gli altri.
+- Suonano con una **notifica di Windows** anche a finestra chiusa: l'app resta
+  nell'area di notifica proprio per questo. Uno scaduto mentre l'app era chiusa
+  suona alla riapertura, **una volta sola**.
+- Si rinviano di dieci minuti o a domani, si segnano come fatti, si eliminano.
+
+Sono **locali**, e la scheda lo dice a schermo invece di lasciarlo intuire: chi
+ci mette dentro un impegno che riguarda tutto lo Studio deve sapere che i
+colleghi non lo vedranno. Per quello ci sono le note interne sulla pratica.
+
+## Copie di sicurezza dei dati locali
+
+Quasi tutto arriva dal server dello Studio ed è al sicuro lì. Una parte no: le
+schede di dettaglio di condominio e di condomino, i file che ci sono attaccati,
+i promemoria, il registro della postazione e le viste salvate della coda stanno
+**solo su questo computer**.
+
+- **Una copia al giorno**, alla prima apertura utile. Non a orario fisso: l'app
+  di uno Studio non è accesa alle tre di notte, e una copia programmata che non
+  parte mai è una copia che non esiste. Si tengono le ultime dieci.
+- Una copia è una **cartella normale**, non un archivio compresso: si apre con
+  Esplora file, si legge con il Blocco note, si copia a mano su una chiavetta.
+  Un formato che richiede questo programma per essere riletto sarebbe
+  esattamente il formato sbagliato per una copia di sicurezza.
+- **«Salva una copia altrove…»** la scrive dove si vuole — ed è l'unica che
+  serve davvero quando il disco si rompe.
+- Il **ripristino** mette da parte lo stato attuale in una copia di riserva
+  prima di toccare qualsiasi cosa: un ripristino sbagliato deve restare
+  annullabile, altrimenti è solo un secondo modo di perdere i dati.
+
+Nelle copie non finiscono **mai** il token di sessione, la derivazione del PIN e
+la chiave dell'applicazione: sono legati a questo profilo di Windows, e una
+copia è fatta per essere portata altrove.
 
 ## Accesso e sicurezza
 
@@ -260,10 +388,32 @@ Le copie installate se ne accorgono da sole:
 - controllo all'avvio e poi una volta all'ora;
 - scaricamento in sottofondo, senza interrompere il lavoro;
 - installazione alla chiusura dell'app — oppure subito, dal riquadro che
-  compare in alto («Riavvia e aggiorna adesso») o da **Impostazioni →
-  Aggiornamenti**, dove si vede sempre a che punto e e si puo forzare un
-  controllo. Anche il menu dell'area di notifica ha la voce «Controlla
-  aggiornamenti».
+  compare in alto («Riavvia e aggiorna adesso»). Anche il menu dell'area di
+  notifica ha la voce «Controlla aggiornamenti».
+
+### Impostazioni → Aggiornamenti
+
+Il quadro completo, per chi ha appena pubblicato e non vuole aspettare l'ora
+tonda:
+
+| Cosa mostra | |
+| --- | --- |
+| Stato | *aggiornata*, *disponibile*, *in scaricamento con la percentuale*, *pronta*, *errore con il motivo* |
+| Versioni | quella installata e quella trovata sul repository |
+| Origine | da quale `owner/repo` arrivano le versioni — è la stessa `build.publish` che legge electron-updater, non un valore scritto due volte |
+| Ultimo controllo | data e ora |
+
+E quattro comandi:
+
+- **Controlla adesso** — forza il controllo, senza aspettare l'ora.
+- **Scarica la versione …** — compare quando c'è qualcosa da scaricare; serve
+  quando lo scaricamento automatico è spento, o quando uno è fallito a metà.
+- **Riavvia e installa adesso** — quando la versione è pronta.
+- **Vedi le versioni su GitHub** — l'elenco delle Release con le note.
+
+La casella **«Scarica da sola le versioni nuove»** si spegne dove la linea è
+lenta o a consumo: da lì in poi l'app avvisa e aspetta il via. Il cambio ha
+effetto subito, senza riavviare.
 
 Nessun aggiornamento parte di sorpresa mentre si sta scrivendo a un condomino:
 il riavvio avviene solo su richiesta o alla chiusura. Se un aggiornamento non
@@ -278,6 +428,28 @@ variabile d'ambiente `GH_TOKEN`.
 
 L'aggiornamento automatico vale sull'app installata: avviata da sorgente con
 `npm start` il controllo resta spento, e le impostazioni lo dicono.
+
+### Passare a questa versione da una già installata
+
+Non c'è niente da disinstallare e niente da rifare a mano.
+
+1. Il push su `main` fa partire **Actions → Rilascio Windows**, che alza la
+   versione, compila l'installer e pubblica la Release.
+2. Le copie già installate se ne accorgono entro un'ora — o subito, da
+   **Impostazioni → Aggiornamenti → Controlla adesso**. Chi vuole anticipare
+   apre l'app e preme quel bottone.
+3. Quando la versione è pronta, **«Riavvia e installa adesso»**. In alternativa
+   basta chiudere l'app: si installa da sola alla chiusura.
+
+Nulla va perso nel passaggio: la sessione resta aperta (niente nuovo codice a
+sei cifre), il PIN resta valido, e schede di archivio, allegati, viste salvate e
+registro restano dove sono — l'installer non tocca `%APPDATA%\Win Studio Admin`
+durante un aggiornamento.
+
+Se l'app installata è troppo vecchia per aggiornarsi da sola — o se non è mai
+stata installata dall'installer — si scarica `Win Studio Admin-Setup-x.y.z.exe`
+dall'ultima Release e lo si esegue **sopra** l'installazione esistente: chiude
+l'app aperta da solo, sostituisce i file e lascia stare i dati.
 
 ## Requisiti
 
@@ -299,8 +471,36 @@ npm run dist     # installer NSIS in dist\
 npm run pack     # solo la cartella eseguibile, senza installer
 ```
 
-L'installer è per utente (nessun diritto di amministratore), con scelta della
-cartella di destinazione.
+### L'installer
+
+Per **utente**, senza diritti di amministratore: sulle postazioni dello Studio
+nessuno li ha, e un installer che li chiede finisce con una telefonata al
+consulente informatico invece che con un programma installato. Le pagine sono
+in **italiano** (`language: 1040`), con il marchio dello Studio sul fianco e in
+testata.
+
+Oltre a quello che fa `electron-builder`, `build/installer.nsh` aggiunge:
+
+1. **chiude l'applicazione se è aperta**, compresa quella che sta solo
+   nell'area di notifica — che è il caso normale, visto che ci resta tutto il
+   giorno. Senza questo passaggio l'aggiornamento fallisce con un «file in uso»
+   che non spiega niente a nessuno;
+2. **avvio automatico con Windows**, offerto come casella nell'ultima pagina e
+   spento di default. Chi installa il programma sulla postazione della
+   segreteria lo decide adesso, non fra tre giorni. All'accesso l'app parte
+   nell'area di notifica, non a tutto schermo davanti al desktop;
+3. registra i collegamenti **`winstudio://`**: un link `winstudio://pratica/1204`
+   in una email di servizio apre quella pratica dentro l'app invece di
+   costringere a cercarla nella coda. Si accettano solo le forme conosciute —
+   un indirizzo storto non può pilotare l'app in un posto qualsiasi;
+4. alla **disinstallazione** chiede se buttare via anche i dati locali (schede,
+   allegati, promemoria, copie di sicurezza) e di default **li lascia stare**.
+   Chi disinstalla per reinstallare non deve perdere niente. Durante un
+   aggiornamento la domanda non compare affatto: il disinstallatore gira in
+   silenzio e i dati non si toccano mai.
+
+Collegamento sul desktop e voce nel menu Start sotto «Studio Associato Amm.
+Burchielli» vengono creati da soli.
 
 ## Configurazione
 
@@ -325,19 +525,27 @@ file.
 ```
 src/
   main/         processo principale: finestra, sessione, rete, notifiche
-    main.js     ciclo di vita, IPC, area di notifica, scorciatoia globale
+    main.js     ciclo di vita, IPC, area di notifica, scorciatoia globale,
+                comandi finestra, ingrandimento, collegamenti winstudio://
     api.js      chiamate al Worker (Bearer + device id + CSRF automatico)
     store.js    impostazioni, token cifrato, identificativo del dispositivo
     pin.js      PIN rapido: derivazione PBKDF2, tentativi, legame utente+dispositivo
     archivio.js schede locali di condominio e condomino
     registro.js registro locale delle attività della postazione (JSONL)
+    promemoria.js     impegni della postazione e loro avviso di Windows
+    copie.js          copie di sicurezza dei dati locali, e loro ripristino
+    stampa.js         la pratica in PDF su carta intestata dello Studio
     aggiornamenti.js  controllo, scaricamento e installazione delle versioni
   preload/      ponte ristretto fra pagina e processo principale
   renderer/     interfaccia (moduli ES nativi, nessun bundler)
-    app.js      guscio, navigazione, cronologia, comando rapido, barra di stato
-    assets/logo.svg   marchio dello Studio, usato ovunque nell'app
+    app.js      guscio, barra dei titoli, navigazione, schede, comando rapido
+    assets/marchio.svg         il simbolo ufficiale, nudo
+    assets/logo.svg            lo stesso simbolo nella tessera chiara
+    assets/marchio-esteso.svg  il lockup completo dello Studio
     lib/ui.js         elementi, formattazione, modali, cache, chiamate
+    lib/icone.js      l'insieme dei pittogrammi disegnati dell'applicazione
     lib/marchio.js    marchio e nomi dello Studio
+    lib/schede.js     schede di lavoro: apertura, chiusura, fissaggio, ripristino
     lib/esporta.js    esportazione CSV e JSON
     lib/blocco.js     blocco della postazione per inattività (PIN o password)
     lib/pin.js        campo a cifre, tastierino e procedura di scelta del PIN
@@ -348,13 +556,14 @@ src/
 ```
 
 ```
+build/installer.nsh              aggiunte italiane all'installer NSIS
 .github/workflows/rilascio.yml   pubblicazione automatica a ogni push
 ```
 
 Nessun bundler lato interfaccia e una sola dipendenza a runtime
 (`electron-updater`): l'app si avvia subito e si aggiorna da sola.
 
-Due punti in cui la struttura porta una decisione, non solo del codice:
+Quattro punti in cui la struttura porta una decisione, non solo del codice:
 
 - **`lib/scorciatoie.js` è una tabella sola.** Combinazioni, descrizioni e
   comportamento nascono dalla stessa struttura dati: `app.js` fornisce una
@@ -365,3 +574,13 @@ Due punti in cui la struttura porta una decisione, non solo del codice:
   raccoglie e lo consegna al processo principale, che tiene sale, derivazione e
   contatore dei tentativi; non esiste una rotta IPC che lo restituisca. Si può
   impostare e verificare, mai rileggere.
+- **Il documento da stampare lo compone il processo principale.** Il renderer
+  manda *dati*, non HTML: ogni valore passa da una funzione di neutralizzazione
+  prima di finire nella pagina, così l'oggetto di una segnalazione scritto da un
+  condomino non può diventare markup. La finestra di stampa nasce senza
+  preload, senza Node e senza JavaScript: non ha niente da cui attingere.
+- **`lib/icone.js` è un insieme solo, e sono tracciati.** Le emoji che c'erano
+  prima cambiavano faccia a ogni versione di Windows, non si potevano colorare e
+  non si allineavano fra loro. Chi aggiunge una sezione aggiunge una riga alla
+  tabella dei tracciati e la chiama per nome: nessun file nuovo, nessuna
+  richiesta di rete.

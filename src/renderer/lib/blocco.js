@@ -18,7 +18,7 @@
  * ========================================================================== */
 
 import { el, svuota } from "./ui.js";
-import { marchio } from "./marchio.js";
+import { marchioEsteso } from "./marchio.js";
 import { campoPin } from "./pin.js";
 
 const EVENTI = ["mousemove", "mousedown", "keydown", "wheel", "touchstart", "focus"];
@@ -93,7 +93,7 @@ async function mostraBlocco(utente, sbloccato) {
 
   const velo = el("div", { class: "blocco" }, [
     el("div", { class: "riquadro blocco-riquadro" }, [
-      marchio({ dimensione: 40, sottotitolo: null }),
+      marchioEsteso(216),
       el("h1", { text: "Postazione bloccata" }),
       el("p", { class: "sotto", text: utente
         ? `Sessione di ${utente.fullName}, ancora aperta. Il lavoro in corso non e stato perso.`

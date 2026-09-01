@@ -13,7 +13,10 @@ const eventi = {
   "app:notifiche": new Set(),
   "app:sessione-scaduta": new Set(),
   "app:scorciatoia-globale": new Set(),
-  "app:aggiornamento": new Set()
+  "app:aggiornamento": new Set(),
+  "app:promemoria": new Set(),
+  "app:copia": new Set(),
+  "app:finestra": new Set()
 };
 
 for (const canale of Object.keys(eventi)) {
@@ -50,7 +53,34 @@ contextBridge.exposeInMainWorld("studio", {
 
   statoAggiornamento: () => ipcRenderer.invoke("aggiornamento:stato"),
   controllaAggiornamento: () => ipcRenderer.invoke("aggiornamento:controlla"),
+  scaricaAggiornamento: () => ipcRenderer.invoke("aggiornamento:scarica"),
   installaAggiornamento: () => ipcRenderer.invoke("aggiornamento:installa"),
+  noteAggiornamento: () => ipcRenderer.invoke("aggiornamento:note"),
+  aggiornamentiAutomatici: (acceso) => ipcRenderer.invoke("aggiornamento:automatico", acceso),
+
+  // Comandi della finestra: la barra dei titoli e disegnata dall'app, quindi
+  // riduci/ingrandisci/chiudi devono passare di qui per arrivare a Windows.
+  finestra: (comando) => ipcRenderer.invoke("finestra:comando", comando),
+  zoom: (passo) => ipcRenderer.invoke("finestra:zoom", passo),
+
+  // Promemoria della postazione: locali, con l'avviso di Windows all'ora scelta.
+  promemoria: (filtri) => ipcRenderer.invoke("promemoria:leggi", filtri),
+  promemoriaAggiungi: (voce) => ipcRenderer.invoke("promemoria:aggiungi", voce),
+  promemoriaFatto: (id, fatto) => ipcRenderer.invoke("promemoria:fatto", { id, fatto }),
+  promemoriaRinvia: (id, minuti) => ipcRenderer.invoke("promemoria:rinvia", { id, minuti }),
+  promemoriaElimina: (id) => ipcRenderer.invoke("promemoria:elimina", id),
+
+  // Copie di sicurezza dei dati che stanno solo su questo computer.
+  copie: () => ipcRenderer.invoke("copie:elenco"),
+  copiaCrea: () => ipcRenderer.invoke("copie:crea"),
+  copiaEsporta: () => ipcRenderer.invoke("copie:esporta"),
+  copiaRimuovi: (nome) => ipcRenderer.invoke("copie:rimuovi", nome),
+  copiaRipristina: (percorso) => ipcRenderer.invoke("copie:ripristina", percorso || null),
+
+  // Stampa: il documento lo compone il processo principale, il renderer manda
+  // solo i dati gia a schermo.
+  stampaPratica: (dati) => ipcRenderer.invoke("stampa:pratica", dati),
+  apriStampa: (percorso) => ipcRenderer.invoke("stampa:apri", percorso),
 
   archivioLeggi: (tipo, chiave) => ipcRenderer.invoke("archivio:leggi", { tipo, chiave }),
   archivioSalva: (tipo, chiave, campi, note) => ipcRenderer.invoke("archivio:salva", { tipo, chiave, campi, note }),

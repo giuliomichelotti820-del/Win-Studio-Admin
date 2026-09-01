@@ -85,6 +85,17 @@ const CAPITOLI = [
     sezioni: [
       p("La disposizione e sempre la stessa, in ogni sezione. E una scelta: chi lavora otto ore dentro un gestionale deve trovare i comandi con la periferia dell'occhio, non cercarli."),
 
+      h("In cima: la barra dei titoli dello Studio"),
+      p("Non e quella di Windows: e disegnata dall'applicazione, e per questo puo dire una cosa che quella di sistema non sa — a quale server sei collegato. La pastiglia accanto al nome mostra l'indirizzo; se non e quello di produzione diventa arancione e dice «collaudo». Vale la pena guardarla prima di chiudere una pratica."),
+      punti(
+        "I tre bottoni a destra sono quelli veri: riduci, ingrandisci, chiudi.",
+        "«Chiudi» non spegne il programma: lo manda nell'area di notifica, dove continua a controllare le novita. Si esce davvero dal menu dell'icona in basso a destra.",
+        "La barra si trascina come una barra dei titoli normale."
+      ),
+
+      h("Sotto la testata: le schede di lavoro"),
+      p("Ogni cosa che apri diventa una linguetta, come su un browser. Compaiono quando ne hai almeno due: con una sola sarebbero solo una riga di pixel sprecata. Il capitolo «Le schede di lavoro» le spiega per intero."),
+
       h("A sinistra: la barra di navigazione"),
       p("Le sezioni sono raggruppate per mestiere: Operativita, Anagrafiche, Comunicazioni, Amministrazione, Aiuto. La mattina si guarda solo il primo gruppo. In fondo c'e il tuo nome: cliccandolo si apre il menu dell'account."),
       punti(
@@ -95,13 +106,15 @@ const CAPITOLI = [
 
       h("In alto: contesto, ricerca e stato"),
       punti(
-        "A sinistra le briciole: gruppo e sezione in cui ti trovi.",
+        "A sinistra le briciole: gruppo e sezione in cui ti trovi, con le frecce avanti e indietro.",
         "Al centro la casella del comando rapido (Ctrl+K): da li si raggiunge tutto.",
+        "Accanto, la sveglia: prende un promemoria in due secondi.",
         "A destra il menu a tendina dello stato del sistema, le notifiche, il tema e il blocco della postazione."
       ),
 
       h("In basso: la barra di stato"),
       p("Chi sei, a quale server sei collegato, quando i dati sono stati aggiornati l'ultima volta, la versione dell'applicazione. E la riga che serve quando qualcosa non torna: dice se stai guardando dati vecchi."),
+      p("Se hai ingrandito l'interfaccia con Ctrl e il tasto piu, li compare anche a quale percentuale sei: e la risposta alla domanda «perche adesso e tutto grande?». Ctrl+0 riporta al cento per cento."),
 
       h("Il comando rapido"),
       p("Ctrl+K apre una sola casella per tutto: le sezioni, le azioni piu frequenti, le viste salvate della coda e la ricerca di una pratica per numero, oggetto o richiedente. Non serve che le parole siano attaccate: «coda urg» trova «Coda: solo urgenti aperte»."),
@@ -389,18 +402,127 @@ const CAPITOLI = [
 
   /* ======================================================================= */
   {
+    id: "schede",
+    parte: "Il lavoro quotidiano",
+    titolo: "Le schede di lavoro",
+    sottotitolo: "Tenere aperte piu pratiche insieme",
+    sezioni: [
+      p("Una segnalazione non si lavora quasi mai da sola: si apre la pratica dell'infiltrazione, si va a vedere la scheda del condominio, si controlla il DURC dell'impresa, si torna alla pratica. Le schede servono a fare quel giro senza tornare ogni volta alla coda e cercare da capo."),
+
+      h("Come funzionano"),
+      punti(
+        "Ogni cosa che apri diventa una linguetta: non esiste un comando «apri in una scheda nuova», perche ogni apertura gia lo e.",
+        "Il nastro compare quando le schede sono almeno due.",
+        "Se ne tengono aperte fino a dodici. Oltre, le linguette diventano illeggibili — e una scheda che non si legge non e una scheda aperta, e disordine. Quando si supera il limite si chiude la piu vecchia, mai quella su cui stai lavorando.",
+        "Le pratiche aperte si ritrovano al riavvio dell'applicazione. Le sezioni no: la barra laterale le raggiunge in un clic."
+      ),
+
+      h("Fissare una linguetta"),
+      p("Doppio clic su una linguetta la fissa: si sposta in testa al nastro e resta anche quando chiudi tutto il resto. Serve alla pratica che stai seguendo da giorni, quella che non vuoi ritrovarti a cercare ogni mattina."),
+
+      tasti(
+        ["Ctrl + Tab", "Scheda seguente"],
+        ["Ctrl + Maiusc + Tab", "Scheda precedente"],
+        ["Ctrl + W", "Chiudi la scheda su cui stai lavorando"],
+        ["Tasto centrale", "Chiudi la linguetta sotto il puntatore"],
+        ["Doppio clic", "Fissa o libera la linguetta"]
+      ),
+
+      nota("Una scheda conserva il posto, non lo stato della pagina: tornandoci, i dati vengono richiesti di nuovo al server. E un bene — quello che leggi e sempre fresco — ma un modulo lasciato a meta non si ritrova. Le viste con del testo in lavorazione te lo chiedono prima di lasciarti cambiare scheda.")
+    ]
+  },
+
+  /* ======================================================================= */
+  {
+    id: "promemoria",
+    parte: "Il lavoro quotidiano",
+    titolo: "I promemoria",
+    sottotitolo: "Ricordarsi di richiamare, senza foglietti",
+    sezioni: [
+      p("«Richiamare l'idraulico giovedi alle nove» non e uno stato della pratica: e un impegno di una persona, a un'ora precisa. Finche non c'era un posto dove metterlo finiva su un foglietto, e il foglietto si perde."),
+
+      h("Come si prende"),
+      punti(
+        "Dalla sveglia in testata, o con Ctrl+Maiusc+R, per un promemoria qualsiasi.",
+        "Dal bottone «Promemoria» dentro la scheda di una pratica: cosi l'avviso, quando suona, ti riporta dentro quella pratica con un clic.",
+        "Dal comando rapido (Ctrl+K), cercando «promemoria»."
+      ),
+      p("Le scorciatoie — fra un'ora, stasera, domani mattina, lunedi prossimo — coprono quasi tutti i casi; la data per esteso resta li sotto per gli altri."),
+
+      h("Quando suona"),
+      punti(
+        "Arriva una notifica di Windows, anche a finestra chiusa: l'applicazione resta nell'area di notifica proprio per questo.",
+        "Cliccando l'avviso si apre la pratica collegata, se ce n'e una.",
+        "Un promemoria scaduto mentre l'applicazione era chiusa suona alla riapertura, una volta sola.",
+        "Dalla sezione Promemoria si rinvia di dieci minuti o a domani, si segna come fatto, si elimina."
+      ),
+
+      nota("I promemoria restano su questo computer e avvisano solo qui: sono un impegno tuo, non dello Studio. Quello che devono vedere anche i colleghi va scritto come nota interna sulla pratica, che sta sul server.")
+    ]
+  },
+
+  /* ======================================================================= */
+  {
+    id: "copie",
+    parte: "Amministrazione",
+    titolo: "Copie di sicurezza",
+    sottotitolo: "I dati che esistono solo qui",
+    sezioni: [
+      p("Quasi tutto quello che vedi arriva dal server dello Studio, ed e al sicuro li. Una parte pero no: le schede di dettaglio di condominio e di condomino, i file che ci sono attaccati, i promemoria, il registro della postazione e le viste salvate della coda stanno solo su questo computer. Se il disco si rompe, quella roba non torna da nessuna parte."),
+
+      h("Che cosa fa l'applicazione da sola"),
+      punti(
+        "Una copia al giorno, alla prima apertura utile. Non a orario fisso: un'app di uno Studio non e accesa alle tre di notte, e una copia programmata che non parte mai e una copia che non esiste.",
+        "Tiene le ultime dieci e butta le piu vecchie. Il numero si cambia in Impostazioni."
+      ),
+
+      h("Che cosa conviene fare a mano"),
+      p("Una volta ogni tanto, «Salva una copia altrove…» su una chiavetta o su una cartella di rete. Una copia che sta sullo stesso disco dei dati protegge da un errore, non da un guasto."),
+
+      h("Com'e fatta una copia"),
+      p("Una cartella normale, non un archivio compresso: si apre con Esplora file, si legge con il Blocco note, si copia a mano. Un formato che richiede questo programma per essere riletto sarebbe esattamente il formato sbagliato per una copia di sicurezza."),
+
+      h("Ripristinare"),
+      passi(
+        "Impostazioni → Copie di sicurezza, scegli la copia e premi «Ripristina».",
+        "L'applicazione mette da parte lo stato attuale in una copia di riserva: un ripristino sbagliato resta annullabile.",
+        "Rimette al loro posto schede, allegati, promemoria e registro, e si riavvia."
+      ),
+
+      nota("Nelle copie non finiscono mai la sessione, il PIN e la chiave dell'applicazione: sono legati a questo profilo di Windows, e una copia e fatta per essere portata altrove. Dopo un ripristino su un altro computer si rientra con email e password, come la prima volta.")
+    ]
+  },
+
+  /* ======================================================================= */
+  {
     id: "aggiornamenti",
     parte: "Amministrazione",
     titolo: "Aggiornamenti",
     sottotitolo: "La versione nuova arriva da sola",
     sezioni: [
       p("L'applicazione controlla da sola se c'e una versione nuova, la scarica in sottofondo e la installa alla chiusura. Chi non tocca niente se la ritrova installata la mattina dopo."),
+
+      h("Da dove arriva una versione nuova"),
+      p("Ogni pubblicazione sul repository dello Studio fa partire un flusso che alza il numero di versione, compila l'installer per Windows e lo mette fra le Release. Da li lo prende l'applicazione installata su ogni postazione. Non c'e niente da configurare e nessuna chiavetta da girare per l'ufficio."),
       punti(
+        "Controllo all'avvio e poi una volta all'ora.",
         "Durante lo scaricamento compare una striscia in alto con la percentuale.",
         "Quando e pronta, la stessa striscia offre «Riavvia e aggiorna adesso» — da usare quando fa comodo, non subito.",
-        "Se l'aggiornamento non riesce, la striscia lo dice e offre di riprovare."
+        "Nessun aggiornamento parte di sorpresa mentre stai scrivendo a un condomino: il riavvio avviene su richiesta o alla chiusura."
       ),
-      p("Lo stato si legge anche nella tendina dello stato del sistema, riga «Aggiornamento applicazione».")
+
+      h("Impostazioni → Aggiornamenti"),
+      p("Il quadro completo, per chi non vuole aspettare l'ora tonda: che versione hai, che versione c'e, da quale repository arrivano, quando e stato l'ultimo controllo, a che punto e lo scaricamento."),
+      punti(
+        "«Controlla adesso» forza il controllo.",
+        "«Scarica la versione …» compare quando c'e qualcosa da scaricare e lo scaricamento automatico e spento.",
+        "«Riavvia e installa adesso» quando la versione e pronta.",
+        "«Vedi le versioni su GitHub» apre l'elenco delle Release con le note di ogni versione.",
+        "La casella «Scarica da sola le versioni nuove» si spegne dove la linea e lenta o a consumo: l'app avvisa e aspetta il tuo via."
+      ),
+      p("Lo stato si legge anche nella tendina dello stato del sistema, riga «Aggiornamento applicazione»."),
+
+      nota("Avviata da sorgente con npm start l'aggiornamento automatico resta spento: non c'e un pacchetto installato da sostituire. Il riquadro lo dice invece di restare in silenzio.")
     ]
   },
 
@@ -490,6 +612,7 @@ const DA_SEZIONE = {
   controllo: "amministrazione",
   registro: "amministrazione",
   impostazioni: "impostazioni",
+  promemoria: "promemoria",
   guida: "primi-passi"
 };
 

@@ -2,15 +2,32 @@
 <html lang="it" data-tema="">
   <head>
     <meta charset="utf-8" />
+    <!--
+      La pagina non puo aprire connessioni (`connect-src 'none'`): la rete la fa
+      solo il processo principale, che e anche l'unico a conoscere il token. Il
+      renderer non ha Node, non ha fetch verso l'esterno e non puo caricare
+      niente che non sia gia dentro il pacchetto.
+    -->
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; form-action 'none'"
     />
-    <title>Win Studio Admin</title>
+    <title>Win Studio Admin — Studio Associato Amm. Burchielli</title>
+    <link rel="icon" href="assets/logo.svg" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div id="app"><p class="caricamento-iniziale">Avvio…</p></div>
+    <!--
+      Prima schermata: il marchio dello Studio, non una scritta grigia. L'app
+      impiega qualche decimo di secondo a montare il guscio, e in quei decimi
+      deve gia essere riconoscibile.
+    -->
+    <div id="app">
+      <div class="caricamento-iniziale">
+        <img src="assets/logo.svg" width="56" height="56" alt="Studio Associato Amm. Burchielli" />
+        <p>Avvio di Win Studio Admin…</p>
+      </div>
+    </div>
     <script type="module" src="app.js"></script>
   </body>
 </html>

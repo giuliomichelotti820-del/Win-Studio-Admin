@@ -12,25 +12,28 @@
  * ========================================================================== */
 
 import { el, svuota, toast } from "../lib/ui.js";
-import { marchio, NOME_STUDIO } from "../lib/marchio.js";
+import { marchio, marchioEsteso, NOME_STUDIO, CLAIM_STUDIO } from "../lib/marchio.js";
+import { icona } from "../lib/icone.js";
 
 const PUNTI = [
-  ["◎", "Coda delle segnalazioni sempre allineata con il sito dello Studio"],
-  ["🛡", "Sessione cifrata sul dispositivo e revocabile in ogni momento"],
-  ["⚡", "Comando rapido, scorciatoie e azioni di massa per il lavoro di volume"]
+  ["coda", "Coda delle segnalazioni sempre allineata con il sito dello Studio"],
+  ["controllo", "Sessione cifrata sul dispositivo e revocabile in ogni momento"],
+  ["scheda", "Schede di lavoro, comando rapido e azioni di massa per il volume"]
 ];
 
 /** Guscio comune alle due schermate: vetrina a sinistra, riquadro a destra. */
 function guscio(riquadro, informazioni) {
   return el("div", { class: "accesso" }, [
     el("aside", { class: "accesso-vetrina" }, [
-      marchio({ dimensione: 40 }),
+      // Qui il marchio sta per intero: e l'unica schermata dell'app con lo
+      // spazio per leggerlo, e la prima che qualcuno vede la mattina.
+      marchioEsteso(264),
       el("div", { class: "vetrina-claim" }, [
         el("h2", { text: "Gestionale dello Studio" }),
         el("p", { class: "grande", text: "Tutte le segnalazioni dei condomini in un solo posto." }),
-        el("p", { class: "sotto", text: `${NOME_STUDIO} — amministrazione condominiale. Questa e la postazione di lavoro dello staff: coda, anagrafiche, comunicazioni e controllo, con gli stessi dati dell'area riservata del sito.` }),
+        el("p", { class: "sotto", text: `${NOME_STUDIO} — ${CLAIM_STUDIO}. Questa e la postazione di lavoro dello staff: coda, anagrafiche, comunicazioni e controllo, con gli stessi dati dell'area riservata del sito.` }),
         el("ul", { class: "vetrina-punti" }, PUNTI.map(([segno, testo]) => el("li", {}, [
-          el("span", { class: "segno", text: segno }),
+          el("span", { class: "segno" }, [icona(segno, 13)]),
           el("span", { text: testo })
         ])))
       ]),
