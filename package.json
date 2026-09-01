@@ -25,6 +25,7 @@
       "package.json"
     ],
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -39,7 +40,14 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "shortcutName": "Win Studio Admin",
-      "differentialPackage": true
+      "differentialPackage": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/installerSidebar.bmp",
+      "installerHeader": "build/installerHeader.bmp",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "publish": [
       {
