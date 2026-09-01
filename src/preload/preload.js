@@ -33,6 +33,15 @@ contextBridge.exposeInMainWorld("studio", {
   logout: () => ipcRenderer.invoke("auth:logout"),
   sblocca: (password) => ipcRenderer.invoke("auth:sblocca", { password }),
 
+  // PIN rapido: il codice attraversa il ponte in chiaro e non va oltre il
+  // processo principale, che lo confronta con la derivazione salvata. Non
+  // esiste una rotta che lo restituisca: si puo impostare e verificare, mai
+  // rileggere.
+  pinStato: () => ipcRenderer.invoke("pin:stato"),
+  pinImposta: (pin, password) => ipcRenderer.invoke("pin:imposta", { pin, password }),
+  pinVerifica: (pin) => ipcRenderer.invoke("pin:verifica", { pin }),
+  pinRimuovi: () => ipcRenderer.invoke("pin:rimuovi"),
+
   get: (percorso) => ipcRenderer.invoke("api:richiesta", { metodo: "GET", percorso }),
   post: (percorso, corpo) => ipcRenderer.invoke("api:richiesta", { metodo: "POST", percorso, corpo }),
   patch: (percorso, corpo) => ipcRenderer.invoke("api:richiesta", { metodo: "PATCH", percorso, corpo }),

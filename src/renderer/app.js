@@ -17,7 +17,10 @@ import { el, svuota, toast, api, modale, dataOra } from "./lib/ui.js";
 import { marchio, NOME_STUDIO } from "./lib/marchio.js";
 import { schermataAccesso } from "./views/accesso.js";
 import { sorveglia, ferma as fermaBlocco, bloccaOra } from "./lib/blocco.js";
-import { mostraScorciatoie } from "./lib/scorciatoie.js";
+import { installaScorciatoie, mostraScorciatoie } from "./lib/scorciatoie.js";
+import { centroStato } from "./lib/stato-sistema.js";
+import { configuraPin, proponiPinSeServe } from "./lib/pin.js";
+import { capitoloPerSezione } from "./views/guida.js";
 
 /* =============================================================================
  * Mappa delle sezioni
@@ -60,6 +63,12 @@ const SEZIONI = [
       { id: "registro", titolo: "Registro attivita", icona: "📓", descrizione: "Cosa e stato fatto da questa postazione", modulo: () => import("./views/registro.js") },
       { id: "impostazioni", titolo: "Impostazioni", icona: "⚙", descrizione: "Collegamento, sicurezza, aspetto e manutenzione", modulo: () => import("./views/impostazioni.js") }
     ]
+  },
+  {
+    gruppo: "Aiuto",
+    voci: [
+      { id: "guida", titolo: "Guida del programma", icona: "📘", descrizione: "Manuale completo: come si fa ogni cosa, e cosa fare quando non funziona", modulo: () => import("./views/guida.js") }
+    ]
   }
 ];
 
@@ -78,6 +87,16 @@ let barraAggiornamento = null;
 let spiaRete = null;
 let vociStato = {};
 let ultimoAggiornamentoDati = null;
+let tendinaStato = null;
+let staccaScorciatoie = null;
+
+/* Cronologia della navigazione, per Alt+← e Alt+→.
+ *
+ * Non e la cronologia del browser: qui non esistono URL e ricaricare la pagina
+ * ricomincerebbe da capo. E un semplice cursore su un elenco di destinazioni,
+ * che e esattamente quello che serve per tornare alla coda dopo aver aperto
+ * tre pratiche di fila — il gesto piu ripetuto della giornata. */
+const cronologia = { voci: [], cursore: -1, inCorso: false };
 
 // Le ultime sezioni e pratiche aperte: il comando rapido le rimette in cima,
 // perche nove volte su dieci si torna dove si era un minuto fa.
@@ -140,6 +159,17 @@ function costruisciGuscio() {
   badgeNotifiche = el("span", { class: "badge nascosta" });
   spiaRete = el("span", { class: "spia", text: "Collegato" });
 
+  // Il centro di stato si costruisce prima della testata perche ne fa parte, e
+  // parte subito a interrogare i servizi: il pallino deve essere gia vero
+  // quando qualcuno lo guarda per la prima volta.
+  if (tendinaStato) tendinaStato.distruggi();
+  tendinaStato = centroStato({
+    utente: stato.utente,
+    impostazioni: stato.impostazioni,
+    versione: stato.versione,
+    naviga
+  });
+
   const briciole = el("div", { class: "briciole" });
 
   const testa = el("header", { class: "testa" }, [
@@ -155,13 +185,15 @@ function costruisciGuscio() {
       el("span", { class: "tasto", text: "Ctrl+K" })
     ]),
     spiaRete,
+    tendinaStato.nodo,
     el("button", {
       class: "icona con-badge", title: "Notifiche", onclick: () => naviga("notifiche")
     }, [el("span", { text: "🔔" }), badgeNotifiche]),
     el("button", {
-      class: "icona", text: temaIcona(), title: "Cambia tema",
-      onclick: (evento) => { ruotaTema(); evento.currentTarget.textContent = temaIcona(); }
+      class: "icona bottone-tema", text: temaIcona(), title: "Cambia tema (Ctrl+Shift+T)",
+      onclick: ruotaTema
     }),
+    el("button", { class: "icona", text: "📘", title: "Guida del programma (F1)", onclick: () => naviga("guida") }),
     el("button", { class: "icona", text: "⏻", title: "Blocca la postazione (Ctrl+L)", onclick: () => bloccaOra(stato.utente) })
   ]);
 
@@ -209,7 +241,8 @@ function barraStato() {
     vociStato.sincronia,
     vociStato.silenzio,
     el("span", { class: "spazio" }),
-    el("button", { class: "voce-stato", text: "⌨ Scorciatoie (F1)", onclick: mostraScorciatoie }),
+    el("button", { class: "voce-stato", text: "⌨ Scorciatoie (Ctrl+/)", onclick: mostraScorciatoie }),
+    el("button", { class: "voce-stato", text: "📘 Guida (F1)", onclick: () => naviga("guida") }),
     el("button", { class: "voce-stato", text: "🩺 Diagnostica", onclick: () => naviga("impostazioni") }),
     el("span", { class: "voce-stato", text: `v${stato.versione}` })
   ]);
@@ -259,6 +292,11 @@ function ruotaTema() {
   stato.impostazioni.tema = prossimo;
   applicaAspetto(stato.impostazioni);
   window.studio.impostazioni({ tema: prossimo });
+  // L'icona la aggiorna la funzione, non chi l'ha chiamata: il tema si cambia
+  // anche da Ctrl+Shift+T e dal comando rapido, dove non c'e nessun bottone
+  // sotto il dito.
+  const bottone = document.querySelector(".bottone-tema");
+  if (bottone) bottone.textContent = temaIcona();
   toast(`Tema: ${{ sistema: "come Windows", chiaro: "chiaro", scuro: "scuro" }[prossimo]}.`);
 }
 
@@ -282,12 +320,20 @@ function menuUtente() {
         el("dt", { text: "Nome" }), el("dd", { text: stato.utente.fullName }),
         el("dt", { text: "Email" }), el("dd", { text: stato.utente.email }),
         el("dt", { text: "Ruolo" }), el("dd", { text: ruolo(stato.utente) }),
+        el("dt", { text: "PIN rapido" }),
+        el("dd", { text: stato.pin && stato.pin.configurato ? `attivo, ${stato.pin.lunghezza} cifre` : "non impostato" }),
         el("dt", { text: "Versione" }), el("dd", { text: stato.versione })
       ]),
       voce("Blocca la postazione", "Ctrl+L", () => bloccaOra(stato.utente)),
+      voce(
+        stato.pin && stato.pin.configurato ? "Cambia il PIN rapido" : "Imposta il PIN rapido",
+        "Sblocco veloce di questa postazione",
+        apriConfigurazionePin
+      ),
       voce("Impostazioni", "Collegamento, sicurezza, aspetto", () => naviga("impostazioni")),
       voce("Registro delle attivita", "Cosa e stato fatto da questo computer", () => naviga("registro")),
-      voce("Scorciatoie da tastiera", "F1", mostraScorciatoie),
+      voce("Guida del programma", "F1", () => naviga("guida")),
+      voce("Scorciatoie da tastiera", "Ctrl+/", mostraScorciatoie),
       voce("Esci dall'account", "Chiude la sessione su questo computer", async () => {
         await window.studio.logout();
         location.reload();
@@ -378,6 +424,50 @@ function ricorda(sezione, destinazione) {
   if (indice >= 0) recenti.splice(indice, 1);
   recenti.unshift({ etichetta, destinazione, icona: sezione.icona || "▤" });
   recenti.splice(6);
+
+  // Muoversi con Alt+← non deve riscrivere la cronologia, altrimenti non si
+  // torna mai indietro davvero: si oscillerebbe fra le ultime due voci.
+  if (cronologia.inCorso) return;
+  // Ripremere la stessa voce di menu non e uno spostamento.
+  if (cronologia.voci[cronologia.cursore] === destinazione) return;
+  cronologia.voci.splice(cronologia.cursore + 1);
+  cronologia.voci.push(destinazione);
+  // Cinquanta passi bastano per una giornata e non fanno crescere la memoria
+  // di un'app che resta aperta per settimane.
+  if (cronologia.voci.length > 50) cronologia.voci.shift();
+  cronologia.cursore = cronologia.voci.length - 1;
+}
+
+/* --- Avanti e indietro ---------------------------------------------------- */
+
+function spostaCronologia(passo) {
+  const destinazione = cronologia.cursore + passo;
+  if (destinazione < 0 || destinazione >= cronologia.voci.length) {
+    toast(passo < 0 ? "Sei alla prima sezione aperta." : "Sei all'ultima sezione aperta.");
+    return;
+  }
+  cronologia.cursore = destinazione;
+  cronologia.inCorso = true;
+  naviga(cronologia.voci[destinazione]).finally(() => { cronologia.inCorso = false; });
+}
+
+/* =============================================================================
+ * PIN rapido
+ * ========================================================================== */
+
+/**
+ * Apre la procedura di scelta del PIN e tiene allineato lo stato in memoria:
+ * il menu dell'account e la tendina di stato leggono da li.
+ */
+function apriConfigurazionePin() {
+  configuraPin({
+    utente: stato.utente,
+    sostituzione: !!(stato.pin && stato.pin.configurato),
+    fatto: (nuovo) => {
+      stato.pin = nuovo;
+      if (tendinaStato) tendinaStato.aggiorna();
+    }
+  });
 }
 
 /* =============================================================================
@@ -416,14 +506,38 @@ function azioniPalette() {
     { gruppo: "Controllo", icona: "🛡", etichetta: "Controllo: attivita dello staff", azione: () => naviga("controllo", { scheda: "attivita" }) },
     { gruppo: "Controllo", icona: "🛡", etichetta: "Controllo: credenziali dipendenti", azione: () => naviga("controllo", { scheda: "dipendenti" }) },
     { gruppo: "Controllo", icona: "🛡", etichetta: "Controllo: credenziali condomini", azione: () => naviga("controllo", { scheda: "condomini" }) },
+    { gruppo: "Sistema", icona: "◉", etichetta: "Stato del sistema: apri il quadro completo", dettaglio: "Server, email, WhatsApp, notifiche, sicurezza", azione: () => tendinaStato && tendinaStato.apri() },
+    { gruppo: "Sistema", icona: "↻", etichetta: "Ricontrolla adesso tutti i servizi", azione: () => tendinaStato && tendinaStato.aggiorna() },
+    { gruppo: "Guida", icona: "📘", etichetta: "Guida del programma", dettaglio: "Il manuale completo, con la ricerca", azione: () => naviga("guida") },
+    { gruppo: "Guida", icona: "📘", etichetta: "Guida: la sezione che ho aperto adesso", azione: apriGuidaContestuale },
+    ...GUIDA_RAPIDA.map(([capitolo, etichetta]) => ({
+      gruppo: "Guida", icona: "›", etichetta: `Guida: ${etichetta}`, azione: () => naviga(`guida:${capitolo}`)
+    })),
+    { gruppo: "Guida", icona: "⌨", etichetta: "Scorciatoie da tastiera", azione: mostraScorciatoie },
+    { gruppo: "Postazione", icona: "🔑", etichetta: stato.pin && stato.pin.configurato ? "Cambia il PIN rapido di accesso" : "Imposta il PIN rapido di accesso", azione: apriConfigurazionePin },
     { gruppo: "Postazione", icona: "🔔", etichetta: "Aggiorna le notifiche adesso", azione: () => window.studio.aggiornaNotifiche() },
     { gruppo: "Postazione", icona: "🔕", etichetta: stato.impostazioni.nonDisturbare ? "Riattiva le notifiche di Windows" : "Silenzia le notifiche di Windows", azione: commutaSilenzio },
     { gruppo: "Postazione", icona: "🎨", etichetta: "Cambia tema", azione: ruotaTema },
     { gruppo: "Postazione", icona: "☰", etichetta: "Comprimi o riapri la barra laterale", azione: commutaLaterale },
-    { gruppo: "Postazione", icona: "⌨", etichetta: "Scorciatoie da tastiera", azione: mostraScorciatoie },
     { gruppo: "Postazione", icona: "⏻", etichetta: "Blocca la postazione", azione: () => bloccaOra(stato.utente) },
     { gruppo: "Postazione", icona: "🚪", etichetta: "Esci dall'account", azione: async () => { await window.studio.logout(); location.reload(); } }
   ];
+}
+
+// I capitoli che vengono cercati piu spesso, raggiungibili dal comando rapido
+// senza passare dall'indice della guida.
+const GUIDA_RAPIDA = [
+  ["pin", "il PIN rapido"],
+  ["stato-sistema", "lo stato del sistema"],
+  ["coda", "la coda delle segnalazioni"],
+  ["scorciatoie", "tutte le scorciatoie"],
+  ["problemi", "quando qualcosa non va"],
+  ["domande", "domande frequenti"]
+];
+
+/** Shift+F1: la guida aperta sul capitolo che riguarda la sezione corrente. */
+function apriGuidaContestuale() {
+  naviga(`guida:${capitoloPerSezione(vistaCorrente || "coda")}`);
 }
 
 /**
@@ -568,27 +682,49 @@ function aggiornaSpiaSilenzio() {
 
 /* =============================================================================
  * Scorciatoie globali
+ *
+ * Le combinazioni non sono scritte qui: stanno in lib/scorciatoie.js insieme
+ * alla loro descrizione, e questo blocco si limita a dire che cosa fa ciascun
+ * identificatore. E il motivo per cui la finestra dell'aiuto non puo diventare
+ * bugiarda — elenco e comportamento vengono dalla stessa tabella.
  * ========================================================================== */
 
 function scorciatoieGlobali() {
-  document.addEventListener("keydown", (evento) => {
-    const dentroCampo = /^(INPUT|TEXTAREA|SELECT)$/.test(evento.target.tagName);
-    const comando = evento.ctrlKey || evento.metaKey;
+  if (staccaScorciatoie) staccaScorciatoie();
 
-    if (comando && evento.key.toLowerCase() === "k") { evento.preventDefault(); apriPalette(); return; }
-    if (comando && evento.key.toLowerCase() === "b") { evento.preventDefault(); commutaLaterale(); return; }
-    if (comando && evento.key.toLowerCase() === "l") { evento.preventDefault(); bloccaOra(stato.utente); return; }
-    if (evento.key === "F1") { evento.preventDefault(); mostraScorciatoie(); return; }
+  staccaScorciatoie = installaScorciatoie({
+    // Con una modale, il comando rapido o il velo di blocco a schermo, gli
+    // eventi non arrivano fin qui: quelle sovrapposizioni fermano il tasto in
+    // fase di cattura. Il controllo resta come rete di sicurezza.
+    attiva: () => !!stato && stato.autenticato && !document.querySelector(".blocco"),
 
-    if (comando && evento.key >= "1" && evento.key <= "9") {
-      const sezione = TUTTE[Number(evento.key) - 1];
-      if (sezione) { evento.preventDefault(); naviga(sezione.id); }
-      return;
-    }
-    if (evento.key === "F5" || (comando && evento.key.toLowerCase() === "r")) {
-      if (dentroCampo && !comando) return;
-      evento.preventDefault();
-      naviga(vistaCorrente || "coda");
+    azioni: {
+      palette: apriPalette,
+      "stato-sistema": () => tendinaStato && tendinaStato.commuta(),
+      guida: () => naviga("guida"),
+      "guida-sezione": apriGuidaContestuale,
+      "elenco-scorciatoie": mostraScorciatoie,
+      impostazioni: () => naviga("impostazioni"),
+      ricarica: () => naviga(vistaCorrente === "ticket" ? cronologia.voci[cronologia.cursore] : (vistaCorrente || "coda")),
+      blocca: () => bloccaOra(stato.utente),
+      laterale: commutaLaterale,
+      tema: ruotaTema,
+      silenzio: commutaSilenzio,
+      "aggiorna-notifiche": async () => {
+        await window.studio.aggiornaNotifiche();
+        toast("Controllo delle novita richiesto.", "ok");
+      },
+      indietro: () => spostaCronologia(-1),
+      avanti: () => spostaCronologia(1)
+    },
+
+    vaiA: (idSezione) => naviga(idSezione),
+
+    // Ctrl+1…9 segue l'ordine con cui le voci compaiono nella barra laterale,
+    // che e l'unico ordine che l'utente vede.
+    perNumero: (numero) => {
+      const sezione = TUTTE[numero - 1];
+      if (sezione) naviga(sezione.id);
     }
   });
 }
@@ -603,6 +739,7 @@ async function avvia() {
 
   if (!stato.autenticato) {
     fermaBlocco();
+    if (tendinaStato) { tendinaStato.distruggi(); tendinaStato = null; }
     schermataAccesso(radice, {
       informazioni: {
         versione: stato.versione,
@@ -618,6 +755,20 @@ async function avvia() {
   aggiornaSpiaSilenzio();
   sorveglia({ minuti: stato.impostazioni.bloccoMinuti, utente: stato.utente });
   await naviga(stato.impostazioni.ultimaVista || "panoramica");
+
+  // Il PIN si propone dopo che la coda e a schermo, non prima: la prima cosa
+  // che deve comparire aprendo l'app e il lavoro, non una richiesta. E si
+  // propone una volta sola per account — chi rimanda lo trova poi nel menu
+  // dell'account, nelle impostazioni e nel comando rapido.
+  proponiPinSeServe({
+    utente: stato.utente,
+    statoPin: stato.pin,
+    impostazioni: stato.impostazioni,
+    fatto: (nuovo) => {
+      stato.pin = nuovo;
+      if (tendinaStato) tendinaStato.aggiorna();
+    }
+  });
 }
 
 /* =============================================================================
