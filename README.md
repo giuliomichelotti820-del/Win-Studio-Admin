@@ -29,7 +29,8 @@ qui si vede subito nell'area riservata, e viceversa.
 | **Studio** | Account dipendente, invio email dallo Studio, invito clienti (solo titolare). |
 | **Controllo** | Solo titolare: sessioni aperte in tempo reale, attività di ogni dipendente, credenziali di dipendenti e condomini, diario completo. |
 | **Registro attività** | Che cosa è stato fatto **da questa postazione**: accessi riusciti e rifiutati, sblocchi, esportazioni, importazioni. Filtrabile ed esportabile. |
-| **Impostazioni** | Collegamento, sicurezza della postazione, orari degli avvisi, copia della configurazione, diagnostica. |
+| **Impostazioni** | Collegamento, sicurezza della postazione, PIN rapido, orari degli avvisi, copia della configurazione, diagnostica. |
+| **Guida del programma** | Manuale completo dentro l'app: sedici capitoli con indice, ricerca a testo pieno, aiuto contestuale (`Maiusc+F1`) ed esportazione in testo. |
 
 ## Pensata per il volume
 
@@ -39,7 +40,8 @@ qui si vede subito nell'area riservata, e viceversa.
 - **Risposta senza mouse**: `Ctrl+Invio` invia al condomino, `Ctrl+Maiusc+Invio` salva una nota interna.
 - **Sempre viva**: la coda si aggiorna da sola in sottofondo e le notifiche arrivano come avvisi di Windows anche a finestra chiusa (l'app resta nell'area di notifica).
 - **Richiamo globale** `Ctrl+Alt+S` da qualunque programma: porta su l'app e apre il comando rapido.
-- `Ctrl+1`…`Ctrl+9` saltano direttamente alle sezioni, `Ctrl+B` comprime la barra laterale, `F1` mostra tutte le scorciatoie.
+- **Spostamenti a due tasti**: `G` e poi l'iniziale della sezione — `G C` la coda, `G S` gli stabili, `G W` WhatsApp, `G H` la guida. Le lettere sono quelle con cui le sezioni vengono chiamate in ufficio, non i numeri di posizione.
+- `Ctrl+1`…`Ctrl+9` saltano alle prime nove sezioni, `Ctrl+B` comprime la barra laterale, `Alt+←` e `Alt+→` percorrono la cronologia, `Ctrl+/` mostra tutte le scorciatoie con la ricerca, `F1` apre la guida.
 - **Viste salvate**: i tagli della coda che si rifanno ogni giorno ("le mie urgenti", "in attesa da una settimana") si salvano con un nome e tornano nella tendina e nel comando rapido.
 - **Esportazione in CSV**: coda e registro finiscono in Excel con un clic, separatore e accenti già giusti per Excel italiano.
 
@@ -51,7 +53,8 @@ messa in una finestra:
 - **Navigazione raggruppata** per mestiere — Operatività, Anagrafiche,
   Comunicazioni, Amministrazione — comprimibile a sole icone con `Ctrl+B`.
 - **Testata di contesto** con percorso della sezione, ricerca globale, spia del
-  collegamento, notifiche non lette e cambio tema.
+  collegamento, **menu a tendina dello stato del sistema**, notifiche non lette,
+  cambio tema e guida.
 - **Barra di stato** sempre visibile: chi è collegato, a quale server, quando è
   arrivato l'ultimo aggiornamento, se gli avvisi sono silenziati, quale
   versione è installata.
@@ -97,12 +100,94 @@ condizione predefinita — l'app chiede il codice come il sito.
 - Le sessioni aperte si vedono e si revocano da **Impostazioni → Dispositivi
   collegati**.
 
+### PIN rapido di accesso
+
+Appena un account viene associato al computer, l'app propone di scegliere un
+**PIN da 4 a 8 cifre**. Da quel momento riprendere la postazione bloccata
+richiede il PIN invece della password completa.
+
+Non è una comodità gratuita, è ciò che rende sostenibile il blocco: senza PIN,
+quindici minuti di inattività significano digitare una password lunga trenta
+volte al giorno, e finisce sempre allo stesso modo — blocco alzato a un'ora,
+password accorciata, o foglietto sotto la tastiera.
+
+Che cosa il PIN **è**:
+
+- valido **solo su questo computer** e **solo per quell'account**: è legato al
+  `deviceId` della postazione e all'id utente;
+- una chiave per **riaprire una sessione già aperta**, non per aprirne di nuove.
+  Se il token del server è scaduto si torna comunque alle credenziali;
+- **mai in rete**: la verifica avviene tutta nel processo principale.
+
+Come viene conservato: sul disco non finisce mai il PIN, ma solo la sua
+derivazione **PBKDF2-SHA512 a 310 000 giri con sale casuale**; dove Windows
+offre DPAPI, anche quella derivazione è cifrata con `safeStorage`, così un
+altro profilo Windows non può nemmeno tentarne la forzatura offline.
+
+Regole e limiti:
+
+- rifiutate le cifre tutte uguali, le sequenze consecutive e i PIN più diffusi;
+- **cinque tentativi**: al quinto errore il PIN viene cancellato dalla
+  postazione e si torna alla password, da cui se ne può impostare subito uno
+  nuovo. Nessun blocco a tempo — chi ha davvero sbagliato non deve restare
+  fuori dal proprio lavoro;
+- impostarlo o cambiarlo richiede **sempre la password dell'account**: è
+  l'unica prova che davanti alla tastiera ci sia ancora il suo titolare;
+- si gestisce da **Impostazioni → Sicurezza**, dal menu dell'account o dal
+  comando rapido.
+
+### Stato del sistema, in testata
+
+Un menu a tendina (`Ctrl+Maiusc+S`, o il pallino accanto alle notifiche)
+raccoglie **in un posto solo** ogni pezzo che può smettere di funzionare:
+
+| Gruppo | Che cosa sorveglia |
+| --- | --- |
+| **Collegamento** | Raggiungibilità e latenza del server dello Studio, validità della sessione. |
+| **Comunicazioni** | Canale email Gmail e ultimi invii, lettura automatica della posta, WhatsApp Business e il suo webhook, notifiche di Windows. |
+| **Lavoro** | Urgenti aperte, pratiche senza assegnatario, richieste dal modulo contatti, tempo medio di chiusura. |
+| **Sicurezza** | Blocco per inattività, PIN rapido, cifratura della sessione sul disco. |
+| **Postazione** | Aggiornamento dell'applicazione, cartella dei dati locali. |
+
+Tre regole di lettura, applicate senza eccezioni:
+
+1. ogni spia dice sempre una delle cinque cose — *operativo*, *da controllare*,
+   *non funziona*, *disattivato*, *non verificato*. Non esiste il verde per
+   «probabilmente»: ciò che non è stato interrogato risulta non verificato;
+2. il pallino in testata riassume la **peggiore**. Se è rosso, in ufficio si sta
+   già perdendo tempo su qualcosa;
+3. ogni riga porta **dove si risolve**. Uno stato che non si può affrontare da
+   nessuna parte è una notizia inutile.
+
+Le sonde girano in parallelo e cadono ognuna per conto suo: WhatsApp fuori uso
+non nasconde che l'email invece funziona. Chi non ha i permessi per una rotta
+da titolare non vede un errore rosso, ma una riga che lo dice.
+
+**«Copia il rapporto»**, in fondo alla tendina, mette negli appunti il quadro
+completo con versione, utente e orario: è l'unica cosa da incollare in una
+richiesta di assistenza.
+
+### Guida del programma
+
+Il manuale sta **dentro l'applicazione**, non in un PDF su una cartella di rete
+che nessuno apre: sedici capitoli con indice a sinistra, ricerca a testo pieno
+su tutto il contenuto, navigazione avanti/indietro fra capitoli ed esportazione
+in testo da mandare per email.
+
+- `F1` apre la guida; `Maiusc+F1` la apre **sul capitolo che riguarda la
+  sezione aperta in quel momento**;
+- i capitoli più cercati (il PIN, lo stato del sistema, «quando qualcosa non
+  va», le domande frequenti) si raggiungono anche dal comando rapido;
+- il capitolo delle scorciatoie **non è scritto a mano**: legge la stessa
+  tabella che governa i tasti veri, quindi non può raccontarne di diversi.
+
 ### Blocco della postazione
 
 Dopo un tempo di inattività configurabile (15 minuti di serie) l'app si oscura
-e chiede di nuovo la password; `Ctrl+L` blocca subito. La sessione con il
-server **non** viene chiusa: non serve un nuovo codice di verifica e non si
-perde il lavoro a metà, si verifica soltanto che davanti al computer ci sia
+e per riprendere serve il **PIN** — o la password, se il PIN non è impostato o
+è stato disattivato dai tentativi sbagliati; `Ctrl+L` blocca subito. La sessione
+con il server **non** viene chiusa: non serve un nuovo codice di verifica e non
+si perde il lavoro a metà, si verifica soltanto che davanti al computer ci sia
 ancora la stessa persona. Si regola da **Impostazioni → Sicurezza della
 postazione**.
 
@@ -110,7 +195,9 @@ postazione**.
 
 Il server sa che cosa è cambiato sulle pratiche; il registro locale sa che cosa
 è stato fatto *da questo computer*, anche quando la rete era giù: accessi
-riusciti e **rifiutati**, sblocchi, esportazioni, importazioni di impostazioni.
+riusciti e **rifiutati**, sblocchi con password e con PIN, PIN impostati,
+sostituiti o disattivati dai tentativi, esportazioni, importazioni di
+impostazioni.
 È un file JSONL nella cartella dati, che ruota da solo, consultabile ed
 esportabile dalla sezione **Registro attività**.
 
@@ -241,19 +328,23 @@ src/
     main.js     ciclo di vita, IPC, area di notifica, scorciatoia globale
     api.js      chiamate al Worker (Bearer + device id + CSRF automatico)
     store.js    impostazioni, token cifrato, identificativo del dispositivo
+    pin.js      PIN rapido: derivazione PBKDF2, tentativi, legame utente+dispositivo
     archivio.js schede locali di condominio e condomino
     registro.js registro locale delle attività della postazione (JSONL)
     aggiornamenti.js  controllo, scaricamento e installazione delle versioni
   preload/      ponte ristretto fra pagina e processo principale
   renderer/     interfaccia (moduli ES nativi, nessun bundler)
-    app.js      guscio, navigazione, comando rapido, barra di stato
+    app.js      guscio, navigazione, cronologia, comando rapido, barra di stato
     assets/logo.svg   marchio dello Studio, usato ovunque nell'app
     lib/ui.js         elementi, formattazione, modali, cache, chiamate
     lib/marchio.js    marchio e nomi dello Studio
     lib/esporta.js    esportazione CSV e JSON
-    lib/blocco.js     blocco della postazione per inattività
-    lib/scorciatoie.js elenco delle scorciatoie (F1)
-    views/            una sezione per file (accesso.js è la schermata di accesso)
+    lib/blocco.js     blocco della postazione per inattività (PIN o password)
+    lib/pin.js        campo a cifre, tastierino e procedura di scelta del PIN
+    lib/stato-sistema.js  sonde dei servizi e menu a tendina dello stato globale
+    lib/scorciatoie.js tabella unica di tasti + descrizioni, e finestra dell'aiuto
+    views/            una sezione per file (accesso.js è la schermata di accesso,
+                      guida.js è il manuale completo)
 ```
 
 ```
@@ -262,3 +353,15 @@ src/
 
 Nessun bundler lato interfaccia e una sola dipendenza a runtime
 (`electron-updater`): l'app si avvia subito e si aggiorna da sola.
+
+Due punti in cui la struttura porta una decisione, non solo del codice:
+
+- **`lib/scorciatoie.js` è una tabella sola.** Combinazioni, descrizioni e
+  comportamento nascono dalla stessa struttura dati: `app.js` fornisce una
+  funzione per identificatore, la finestra `Ctrl+/` e il capitolo della guida
+  leggono le stesse righe. Finché l'elenco dell'aiuto è scritto a mano da una
+  parte e i tasti dall'altra, i due divergono in due settimane.
+- **Il PIN non attraversa mai il renderer come segreto.** La pagina lo
+  raccoglie e lo consegna al processo principale, che tiene sale, derivazione e
+  contatore dei tentativi; non esiste una rotta IPC che lo restituisca. Si può
+  impostare e verificare, mai rileggere.

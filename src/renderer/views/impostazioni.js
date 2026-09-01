@@ -3,8 +3,9 @@
  * dispositivi collegati all'account e chiusura della sessione.
  * ========================================================================== */
 
-import { el, svuota, aggiungi, api, toast, dataOra, statoVuoto, caricamento, conferma } from "../lib/ui.js";
+import { el, svuota, aggiungi, api, toast, dataOra, statoVuoto, caricamento, conferma, pastiglia } from "../lib/ui.js";
 import { esportaJson } from "../lib/esporta.js";
+import { configuraPin } from "../lib/pin.js";
 
 export default async function monta(radice, ctx) {
   const impostazioni = ctx.impostazioni;
@@ -116,6 +117,58 @@ export default async function monta(radice, ctx) {
 
   const registroAttivo = el("input", { type: "checkbox", checked: impostazioni.registroAttivo !== false });
 
+  /* Il PIN rapido: il riquadro si ridisegna da solo dopo ogni operazione, cosi
+   * chi lo imposta vede subito che c'e e di quante cifre, senza ricaricare la
+   * sezione. E la conferma che serve dopo aver digitato due volte un codice. */
+
+  const rigaPin = el("div", { class: "pin-riepilogo" });
+
+  async function disegnaPin() {
+    const info = await window.studio.pinStato().catch(() => null);
+    svuota(rigaPin);
+
+    if (!info) {
+      rigaPin.append(el("p", { class: "sotto", text: "Stato del PIN non disponibile." }));
+      return;
+    }
+
+    rigaPin.append(
+      el("div", { class: "pin-riepilogo-testa" }, [
+        el("strong", { text: "PIN rapido di accesso" }),
+        el("span", { class: "spazio" }),
+        pastiglia(info.configurato ? `Attivo · ${info.lunghezza} cifre` : "Non impostato", info.configurato ? "stato-risolta" : "avviso")
+      ]),
+      el("p", { class: "sotto", text: info.configurato
+        ? `Impostato il ${dataOra(info.creatoIl)}. Sblocca questa postazione senza ridigitare la password; vale solo qui e solo per il tuo account. Dopo ${info.tentativiMax} tentativi sbagliati si disattiva da solo.`
+        : `Senza PIN ogni sblocco chiede la password completa. Il PIN e da ${info.lunghezzaMin} a ${info.lunghezzaMax} cifre, resta su questo computer e non apre nulla altrove.` }),
+      info.cifratura === false
+        ? el("p", { class: "sotto", text: "Windows non offre la cifratura dei dati locali: il PIN verrebbe salvato senza la protezione del profilo." })
+        : null,
+      el("div", { class: "griglia-bottoni" }, [
+        el("button", {
+          class: info.configurato ? "bottone" : "bottone primario",
+          text: info.configurato ? "Cambia il PIN" : "Imposta il PIN",
+          onclick: () => configuraPin({
+            utente: ctx.utente,
+            sostituzione: info.configurato,
+            fatto: disegnaPin
+          })
+        }),
+        info.configurato
+          ? el("button", {
+            class: "bottone pericolo", text: "Rimuovi il PIN",
+            onclick: async () => {
+              if (!await conferma("Da questo momento ogni sblocco della postazione chiedera la password completa. Rimuovere il PIN?", "Rimuovi il PIN")) return;
+              const esito = await window.studio.pinRimuovi();
+              toast(esito.ok ? "PIN rimosso da questa postazione." : esito.errore, esito.ok ? "ok" : "errore");
+              disegnaPin();
+            }
+          })
+          : null
+      ])
+    );
+  }
+
   radice.appendChild(el("section", { class: "riquadro stretto" }, [
     el("h2", { text: "Sicurezza della postazione" }),
     el("label", { class: "campo-etichetta" }, [el("span", { text: "Blocca lo schermo" }), blocco]),
@@ -128,6 +181,7 @@ export default async function monta(radice, ctx) {
       el("dt", { text: "Sessione sul disco" }),
       el("dd", { text: ctx.cifratura === false ? "Solo in memoria (cifratura di Windows non disponibile)" : "Cifrata con le chiavi dell'account Windows" })
     ]),
+    rigaPin,
     el("button", {
       class: "bottone primario", text: "Salva la sicurezza",
       onclick: async () => {
@@ -140,6 +194,8 @@ export default async function monta(radice, ctx) {
       }
     })
   ]));
+
+  disegnaPin();
 
   /* --- Silenzio delle notifiche -------------------------------------------
    * Le notifiche di Windows che saltano su alle undici di sera sono il modo

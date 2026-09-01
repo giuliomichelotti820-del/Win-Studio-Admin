@@ -18,6 +18,7 @@ const api = require("./api");
 const archivio = require("./archivio");
 const aggiornamenti = require("./aggiornamenti");
 const registro = require("./registro");
+const pin = require("./pin");
 
 let finestra = null;
 let tray = null;
@@ -270,7 +271,10 @@ ipcMain.handle("app:stato", () => {
     utente: sessione.user,
     impostazioni: store.getImpostazioni(),
     versione: app.getVersion(),
-    cifraturaDisponibile: store.cifraturaDisponibile()
+    cifraturaDisponibile: store.cifraturaDisponibile(),
+    // Lo stato del PIN viaggia con lo stato generale: il guscio deve sapere
+    // gia al primo disegno se proporre la configurazione rapida.
+    pin: sessione.user ? pin.stato(sessione.user, sessione.deviceId) : null
   };
 });
 
@@ -319,6 +323,58 @@ ipcMain.handle("auth:sblocca", (_e, { password }) => risultato((async () => {
   annota("sblocco");
   return true;
 })()));
+
+/* --- PIN rapido -----------------------------------------------------------
+ * Il PIN non apre sessioni: riapre quella gia aperta dopo il blocco. Per
+ * questo la verifica e tutta locale e non tocca il server, mentre impostarlo
+ * o sostituirlo richiede prima la password completa — l'unica prova che
+ * davanti alla tastiera c'e ancora il titolare dell'account.
+ * ------------------------------------------------------------------------ */
+
+ipcMain.handle("pin:stato", () => {
+  const sessione = store.getSessione();
+  return sessione.user ? pin.stato(sessione.user, sessione.deviceId) : pin.stato(null, sessione.deviceId);
+});
+
+ipcMain.handle("pin:imposta", (_e, { pin: codice, password }) => risultato((async () => {
+  const sessione = store.getSessione();
+  if (!sessione.user || !sessione.token) throw new Error("Serve una sessione aperta per impostare il PIN.");
+
+  // La password si ricontrolla sempre, anche subito dopo l'accesso: impostare
+  // un PIN e consegnare una scorciatoia permanente a questa postazione.
+  try {
+    await api.login(sessione.user.email, password);
+  } catch (errore) {
+    annota("pin-negato", { dettaglio: errore.message, esito: "errore" });
+    throw new Error("Password non corretta: il PIN non e stato modificato.");
+  }
+
+  const esito = pin.imposta(sessione.user, sessione.deviceId, codice);
+  annota("pin-impostato", { dettaglio: `${String(codice).length} cifre` });
+  return esito;
+})()));
+
+ipcMain.handle("pin:verifica", (_e, { pin: codice }) => {
+  const sessione = store.getSessione();
+  const esito = pin.verifica(sessione.user, sessione.deviceId, codice);
+  if (esito.ok) {
+    annota("sblocco-pin");
+  } else {
+    registro.annota({
+      azione: esito.disattivato ? "pin-disattivato" : "sblocco-pin-negato",
+      dettaglio: esito.errore,
+      esito: "errore"
+    });
+  }
+  return esito;
+});
+
+ipcMain.handle("pin:rimuovi", () => risultato(Promise.resolve((() => {
+  pin.rimuovi();
+  annota("pin-rimosso");
+  const sessione = store.getSessione();
+  return sessione.user ? pin.stato(sessione.user, sessione.deviceId) : null;
+})())));
 
 ipcMain.handle("api:richiesta", (_e, { metodo, percorso, corpo }) => risultato(api.richiesta(metodo, percorso, corpo)));
 

@@ -899,3 +899,284 @@ kbd {
 /* Respiro verticale fra due blocchi di un modulo, senza attributi style: la
    CSP dell'applicazione vieta lo stile inline. */
 .spaziatore { height: 16px; flex: 0 0 auto; }
+
+/* =============================================================================
+ * 8. Stato del sistema, PIN, guida
+ *
+ * Tre aggiunte che condividono un principio: sono superfici di consultazione,
+ * non di lavoro. Righe piu larghe, contrasto piu basso sui testi di contorno,
+ * e nessuna densita compressa — qui non conta quante righe stanno a schermo,
+ * conta che si leggano al primo colpo d'occhio.
+ * ========================================================================== */
+
+/* --- Centro di controllo dello stato --------------------------------------
+ * Vive in testata: il bottone deve pesare quanto le altre icone quando tutto
+ * va, e diventare impossibile da ignorare quando qualcosa e rotto.
+ * ------------------------------------------------------------------------ */
+
+.centro-stato { position: relative; }
+
+.centro-stato-bottone {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--velo); border: 1px solid var(--bordo);
+  border-radius: 999px; padding: 4px 10px 4px 8px;
+  color: var(--testo-2); font: inherit; font-size: 12px; cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+  max-width: 230px;
+}
+.centro-stato-bottone:hover { background: var(--sfondo-3); color: var(--testo); }
+.centro-stato-bottone[aria-expanded="true"] { background: var(--sfondo-3); border-color: var(--bordo-forte); color: var(--testo); }
+.centro-stato-bottone.attenzione { border-color: var(--avviso); color: var(--avviso); }
+.centro-stato-bottone.allarme { border-color: var(--errore); color: var(--errore); background: var(--errore-velo); }
+.centro-stato-bottone.in-corso .stato-pallino { animation: pulsa-stato 1s ease-in-out infinite; }
+
+.stato-etichetta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stato-freccia { font-size: 9px; opacity: .6; }
+
+@keyframes pulsa-stato { 50% { opacity: .35; } }
+
+/* Il pallino: un solo elemento riusato in testata, nelle righe e nel
+   riepilogo, cosi lo stesso stato ha sempre lo stesso colore ovunque. */
+.stato-pallino {
+  width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0; line-height: 1;
+}
+.stato-ok { background: var(--ok); }
+.stato-avviso { background: var(--avviso); }
+.stato-guasto { background: var(--errore); }
+.stato-spento { background: transparent; border: 1.5px solid var(--testo-tenue); }
+.stato-ignoto { background: var(--testo-tenue); }
+
+.centro-stato-pannello {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+  width: 460px; max-height: min(640px, calc(100vh - 90px));
+  display: flex; flex-direction: column;
+  background: var(--sfondo-2); border: 1px solid var(--bordo-forte);
+  border-radius: var(--raggio-l); box-shadow: var(--ombra-3);
+  overflow: hidden;
+  animation: entra-tendina .14s ease-out;
+}
+@keyframes entra-tendina { from { opacity: 0; transform: translateY(-6px); } }
+
+.centro-stato-testa {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px var(--pannello); border-bottom: 1px solid var(--bordo);
+}
+.centro-stato-testa .sotto { display: block; margin-top: 2px; }
+
+.centro-stato-riepilogo {
+  display: flex; flex-wrap: wrap; gap: 6px 14px;
+  padding: 9px var(--pannello); border-bottom: 1px solid var(--bordo-tenue);
+  background: var(--velo);
+}
+.centro-stato-conteggio { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--testo-2); }
+
+.centro-stato-corpo { overflow-y: auto; padding: 4px 0 8px; flex: 1 1 auto; }
+
+.centro-stato-gruppo {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--testo-tenue); padding: 12px var(--pannello) 5px;
+}
+
+.centro-stato-riga {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 7px var(--pannello); border-left: 2px solid transparent;
+}
+.centro-stato-riga .stato-pallino { margin-top: 5px; }
+.centro-stato-riga.riga-guasto { border-left-color: var(--errore); background: var(--errore-velo); }
+.centro-stato-riga.riga-avviso { border-left-color: var(--avviso); }
+
+.centro-stato-testi { flex: 1 1 auto; min-width: 0; }
+.centro-stato-titolo { display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; }
+.centro-stato-testi .sotto { margin: 2px 0 0; font-size: 11.5px; line-height: 1.45; }
+
+.centro-stato-valore { font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.valore-ok { color: var(--ok); }
+.valore-avviso { color: var(--avviso); }
+.valore-guasto { color: var(--errore); }
+.valore-spento, .valore-ignoto { color: var(--testo-tenue); }
+
+.centro-stato-azione {
+  margin-top: 5px; padding: 0; background: none; border: 0;
+  color: var(--accento); font: inherit; font-size: 11.5px; cursor: pointer; text-align: left;
+}
+.centro-stato-azione:hover { text-decoration: underline; }
+
+.centro-stato-piede {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px var(--pannello); border-top: 1px solid var(--bordo);
+  font-size: 11px; color: var(--testo-tenue); background: var(--velo);
+}
+
+/* --- PIN rapido ------------------------------------------------------------
+ * Le caselle non sono <input>: sono nostre, quindi vanno disegnate come un
+ * campo — bordo, anello di fuoco, cursore visibile sulla prossima posizione.
+ * ------------------------------------------------------------------------ */
+
+.pin-blocco { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+
+.pin-campo {
+  display: inline-flex; padding: 4px; border-radius: var(--raggio);
+  outline: none; cursor: text;
+}
+.pin-campo:focus { box-shadow: var(--anello); }
+
+.pin-caselle { display: flex; gap: 9px; }
+
+.pin-casella {
+  width: 38px; height: 46px; border-radius: var(--raggio-s);
+  background: var(--sfondo); border: 1px solid var(--bordo);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: var(--testo);
+  transition: border-color .12s, background .12s;
+}
+.pin-casella.piena { border-color: var(--accento); background: var(--accento-velo); }
+/* Oltre il minimo il PIN puo finire: le caselle in piu si vedono, ma pesano meno. */
+.pin-casella.facoltativa { border-style: dashed; opacity: .55; }
+.pin-campo:focus .pin-casella.cursore { border-color: var(--accento); box-shadow: inset 0 -2px 0 var(--accento); }
+
+.pin-campo.scossa { animation: scuoti-pin .32s; }
+@keyframes scuoti-pin {
+  10%, 90% { transform: translateX(-3px); }
+  30%, 70% { transform: translateX(5px); }
+  50% { transform: translateX(-5px); }
+}
+
+/* Il tastierino esiste per le postazioni con schermo tattile allo sportello,
+   e perche di sera, stanchi, si preferisce cliccare. Non ruba il fuoco alla
+   tastiera: i tasti sono fuori dal giro di Tab. */
+.pin-tastierino { display: grid; grid-template-columns: repeat(3, 62px); gap: 7px; }
+.pin-tasto {
+  height: 44px; border-radius: var(--raggio); cursor: pointer;
+  background: var(--sfondo-3); border: 1px solid var(--bordo);
+  color: var(--testo); font: inherit; font-size: 16px; font-weight: 600;
+  transition: background .1s, border-color .1s;
+}
+.pin-tasto:hover { background: var(--sfondo-4); border-color: var(--bordo-forte); }
+.pin-tasto:active { transform: translateY(1px); }
+.pin-tasto-servizio { font-size: 13px; color: var(--testo-2); background: var(--velo); }
+
+.pin-procedura { display: flex; flex-direction: column; gap: 10px; }
+.pin-procedura > .bottone, .pin-procedura > .link { align-self: stretch; }
+.pin-regole summary { cursor: pointer; font-size: 12px; color: var(--testo-2); padding: 4px 0; }
+.pin-regole ul { margin: 4px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 3px; }
+
+.pin-riepilogo {
+  border: 1px solid var(--bordo); border-radius: var(--raggio);
+  padding: var(--pannello); margin: 4px 0 12px; background: var(--velo);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.pin-riepilogo-testa { display: flex; align-items: center; gap: 10px; }
+.pin-riepilogo .sotto { margin: 0; }
+
+/* --- Schermata di blocco: il pannello che ospita PIN o password ----------- */
+
+.blocco-pannello { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+.blocco-pannello > .campo, .blocco-pannello > .bottone { width: 100%; }
+
+/* --- Suggerimento della sequenza «vai a» ----------------------------------
+ * Compare mentre l'app aspetta la seconda lettera. Sta in basso a sinistra,
+ * lontano dal centro dello sguardo: informa senza interrompere.
+ * ------------------------------------------------------------------------ */
+
+.sequenza-suggerimento {
+  position: fixed; left: 18px; bottom: 44px; z-index: 65;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--sfondo-3); border: 1px solid var(--bordo-forte);
+  border-radius: var(--raggio); padding: 7px 12px;
+  box-shadow: var(--ombra-2); font-size: 12px;
+  animation: entra-toast .12s ease-out;
+}
+.sequenza-suggerimento .sotto { font-size: 11px; }
+
+/* --- Finestra delle scorciatoie ------------------------------------------- */
+
+.scorciatoie-elenco { max-height: 55vh; overflow-y: auto; padding-right: 6px; }
+.scorciatoie-elenco h2 { font-size: 12px; margin: 16px 0 6px; color: var(--testo-2); }
+.scorciatoie-elenco h2:first-child { margin-top: 4px; }
+
+/* =============================================================================
+ * Guida del programma
+ *
+ * Due colonne fisse: l'indice non scorre via mentre si legge un capitolo
+ * lungo, ed e l'unico modo per non perdersi in quindici capitoli. La colonna
+ * di lettura ha una misura massima — sessanta caratteri circa — perche righe
+ * larghe quanto un monitor da ventisette pollici non le legge nessuno.
+ * ========================================================================== */
+
+/* La guida prende tutta l'area della vista e gestisce lo scorrimento nelle sue
+   due colonne: senza questo, l'indice scorrerebbe via insieme al testo e la
+   pagina avrebbe due barre di scorrimento annidate. */
+.vista:has(> .guida) { padding: 0; overflow: hidden; display: flex; }
+
+.guida { display: grid; grid-template-columns: 268px minmax(0, 1fr); gap: 0; flex: 1; min-height: 0; }
+
+.guida-indice {
+  border-right: 1px solid var(--bordo); padding: 6px 10px 20px;
+  overflow-y: auto; display: flex; flex-direction: column; gap: 1px;
+}
+.guida-indice .gruppo-titolo { margin-top: 14px; }
+
+.guida-voce {
+  display: flex; flex-direction: column; gap: 1px; text-align: left;
+  padding: 7px 10px; border-radius: var(--raggio-s);
+  background: none; border: 0; border-left: 2px solid transparent;
+  color: var(--testo-2); font: inherit; font-size: 12.5px; cursor: pointer;
+}
+.guida-voce:hover { background: var(--velo); color: var(--testo); }
+.guida-voce.attiva { background: var(--accento-velo); border-left-color: var(--accento); color: var(--testo); font-weight: 600; }
+.guida-voce .sotto { font-size: 11px; font-weight: 400; line-height: 1.35; }
+
+.guida-lettura { overflow-y: auto; padding: 22px 32px 60px; }
+.guida-lettura > * { max-width: 68ch; }
+
+.guida-testa { border-bottom: 1px solid var(--bordo); padding-bottom: 14px; margin-bottom: 18px; }
+.guida-parte {
+  display: inline-block; font-size: 10.5px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--accento);
+  margin-bottom: 6px;
+}
+.guida-testa h2 { font-size: 22px; margin: 0 0 4px; }
+.guida-testa .sotto { font-size: 13px; }
+
+.guida-corpo { display: flex; flex-direction: column; gap: 12px; }
+.guida-titoletto { font-size: 14px; margin: 14px 0 0; color: var(--testo); }
+.guida-testo { margin: 0; line-height: 1.65; color: var(--testo-2); font-size: 13px; }
+
+.guida-punti, .guida-passi { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; }
+.guida-punti li, .guida-passi li { line-height: 1.55; color: var(--testo-2); font-size: 13px; }
+.guida-passi li { padding-left: 3px; }
+.guida-passi li::marker { color: var(--accento); font-weight: 700; }
+
+/* Note e avvertenze: la differenza fra le due e il colore, non il peso —
+   un'avvertenza urlata smette di essere letta dopo la terza. */
+.guida-nota {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: var(--accento-velo); border-left: 2px solid var(--accento);
+  border-radius: 0 var(--raggio-s) var(--raggio-s) 0; padding: 10px 13px;
+}
+.guida-nota p { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--testo-2); }
+.guida-segno {
+  width: 17px; height: 17px; border-radius: 50%; flex: 0 0 auto; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accento); color: #fff; font-size: 11px; font-weight: 700;
+}
+.guida-attenzione { background: var(--avviso-velo); border-left-color: var(--avviso); }
+.guida-attenzione .guida-segno { background: var(--avviso); }
+
+.guida-tabella td { vertical-align: top; line-height: 1.5; }
+.guida-tabella td:first-child { font-weight: 600; color: var(--testo); white-space: nowrap; }
+
+.guida-piede { display: flex; align-items: center; gap: 10px; margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--bordo); }
+
+.guida .scorciatoie { grid-template-columns: 1fr; }
+
+/* Sotto i 1100 px l'indice fisso mangia troppa larghezza alla lettura: passa
+   sopra al testo e si scorre insieme a lui. */
+@media (max-width: 1100px) {
+  .vista:has(> .guida) { overflow: auto; }
+  .guida { grid-template-columns: 1fr; }
+  .guida-indice { border-right: 0; border-bottom: 1px solid var(--bordo); max-height: 220px; }
+  .guida-lettura { padding: 18px; }
+}
