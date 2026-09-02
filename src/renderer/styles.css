@@ -5,14 +5,22 @@
  * leggere elenchi lunghi, quindi conta quante righe stanno a schermo e quanto
  * si distingue una pratica urgente da una qualsiasi.
  *
+ * I colori non sono una scelta d'autore: sono i tre del marchio dello Studio —
+ * blu notte #0B2341, verde #2E7A50, arancio #E8843D — portati alle luminosita
+ * che servono su fondo scuro. Sono gli stessi della console web (admin.css del
+ * sito): chi passa dal browser all'app non cambia prodotto, cambia finestra.
+ * L'arancio comanda le azioni, il verde conferma, il blu regge le superfici.
+ *
  * Organizzazione del file:
  *   1. Fondamenta      variabili, tema chiaro/scuro, densita
  *   2. Base            tipografia, scorrimento, utilita
- *   3. Guscio          barra laterale, testata, barra di stato
+ *   3. Guscio          barra dei titoli, laterale, testata, schede, stato
  *   4. Comandi         bottoni, campi, segmenti
  *   5. Dati            tabelle, pastiglie, riquadri, tessere
  *   6. Schermate       segnalazione, due colonne, archivio, accesso
  *   7. Sovrapposizioni modali, comando rapido, blocco, messaggi
+ *   8. Stato, PIN, guida
+ *   9. Aggiunte enterprise  schede di lavoro, promemoria, copie di sicurezza
  *
  * Regola unica sui colori: nessun valore esadecimale fuori dal blocco delle
  * variabili. Cambiare il tema dello Studio si fa in venti righe, non in
@@ -24,125 +32,171 @@
  * ========================================================================== */
 
 :root {
-  /* Superfici, dalla piu profonda alla piu in rilievo */
-  --sfondo: #0d1017;
-  --sfondo-2: #141924;
-  --sfondo-3: #1b2130;
-  --sfondo-4: #222a3b;
-  --velo: rgba(255, 255, 255, .04);
+  /* --- Superfici -----------------------------------------------------------
+     Non grigi neutri: sono il blu notte del marchio spinto in fondo alla scala
+     e desaturato quanto basta perche a schermo intero, otto ore al giorno, non
+     affatichi. Dalla piu profonda alla piu in rilievo. */
+  --sfondo: #090D14;
+  --sfondo-2: #10161F;
+  --sfondo-3: #171F2A;
+  --sfondo-4: #202A38;
+  --sfondo-incavo: #0C1119;
+  --velo: rgba(255, 255, 255, .035);
 
-  /* Bordi */
-  --bordo: #262e3d;
-  --bordo-forte: #35405280;
-  --bordo-tenue: #1e2532;
+  /* --- Bordi: sottili, mai protagonisti ---------------------------------- */
+  --bordo: #1F2836;
+  --bordo-forte: #303B4C;
+  --bordo-tenue: #171E29;
 
-  /* Testo */
-  --testo: #e8ecf4;
-  --testo-2: #b3bccd;
-  --testo-tenue: #8b95a8;
+  /* --- Inchiostri --------------------------------------------------------- */
+  --testo: #EDF2F8;
+  --testo-2: #B4C0CF;
+  --testo-tenue: #8592A5;
 
-  /* Marchio */
-  --accento: #4f9cf5;
-  --accento-chiaro: #7fbaff;
-  --accento-scuro: #2f6fbd;
-  --accento-velo: rgba(79, 156, 245, .14);
-  --accento-velo-forte: rgba(79, 156, 245, .24);
-  --degradato-marchio: linear-gradient(135deg, #4f9cf5, #2f6fbd 55%, #1b3f70);
-  --degradato-marchio-tenue: linear-gradient(165deg, rgba(79, 156, 245, .16), rgba(27, 63, 112, .05));
-  --ombra-marchio: 0 10px 26px -8px rgba(47, 111, 189, .55);
+  /* --- Marchio ------------------------------------------------------------
+     L'arancio dello Studio e il colore dell'azione: bottone primario, voce di
+     menu attiva, anello di messa a fuoco. E l'unica cosa che si accende in una
+     schermata di blu, quindi l'occhio ci va da solo. */
+  --accento: #EE8C40;
+  --accento-chiaro: #FFA662;
+  --accento-scuro: #C96A22;
+  --accento-velo: rgba(238, 140, 64, .14);
+  --accento-velo-forte: rgba(238, 140, 64, .3);
+  --degradato-marchio: linear-gradient(135deg, #F09A52, #E8843D 52%, #C96A22);
+  --degradato-marchio-tenue: linear-gradient(168deg, rgba(238, 140, 64, .07), rgba(46, 122, 80, .04) 55%, transparent);
+  --ombra-marchio: 0 8px 22px -10px rgba(232, 132, 61, .7);
 
-  /* Semantica */
-  --ok: #46b27a;
-  --ok-velo: rgba(70, 178, 122, .16);
-  --avviso: #e2a13a;
-  --avviso-velo: rgba(226, 161, 58, .16);
-  --errore: #e05a5a;
-  --errore-velo: rgba(224, 90, 90, .16);
-  --urgente: #ff6b6b;
-  --info-velo: rgba(146, 120, 235, .18);
-  --viola: #b8a5ff;
+  /* Blu e verde del marchio, per cio che informa e per cio che conferma. */
+  --marchio-blu: #6BA6F5;
+  --marchio-verde: #4FBE8B;
+  --collegamento: #7FB4F7;
 
-  /* Forma */
-  --raggio: 9px;
-  --raggio-s: 6px;
-  --raggio-l: 14px;
-  --raggio-xl: 20px;
+  /* --- Semantica ---------------------------------------------------------- */
+  --ok: #4FBE8B;
+  --ok-velo: rgba(79, 190, 139, .15);
+  --avviso: #E7B34F;
+  --avviso-velo: rgba(231, 179, 79, .15);
+  --errore: #EF6373;
+  --errore-velo: rgba(239, 99, 115, .15);
+  --urgente: #FF7A7A;
+  --info-velo: rgba(107, 166, 245, .16);
+  --viola: #A78BFA;
 
-  /* Rilievo */
-  --ombra-1: 0 1px 2px rgba(0, 0, 0, .28);
-  --ombra-2: 0 4px 14px rgba(0, 0, 0, .32);
-  --ombra-3: 0 18px 48px rgba(0, 0, 0, .48);
+  /* --- Forma --------------------------------------------------------------
+     Una scala sola. I componenti si assomigliano perche derivano dagli stessi
+     token, non perche sono stati allineati a mano. */
+  --raggio: 8px;
+  --raggio-s: 5px;
+  --raggio-l: 12px;
+  --raggio-xl: 18px;
+
+  /* --- Rilievo -------------------------------------------------------------
+     La gerarchia si legge dal rilievo, non dal peso delle linee. */
+  --ombra-1: 0 1px 2px rgba(0, 0, 0, .35);
+  --ombra-2: 0 6px 18px -6px rgba(0, 0, 0, .55);
+  --ombra-3: 0 24px 60px -12px rgba(0, 0, 0, .68);
   --anello: 0 0 0 2px var(--accento-velo-forte);
+  /* Inchiostro sopra una campitura piena di accento: l'arancio del marchio e
+   * troppo chiaro perche il bianco ci si legga sopra. */
+  --su-accento: #17110A;
 
-  /* Ritmo verticale: la densita lo comprime, non i singoli componenti */
+  /* --- Ritmo verticale ----------------------------------------------------
+     La densita lo comprime, non i singoli componenti. */
   --riga-y: 7px;
   --controllo-y: 6px;
   --pannello: 13px;
 
+  /* --- Guscio -------------------------------------------------------------- */
+  --h-titolo: 34px;      /* barra dei titoli dell'applicazione */
+  --h-testa: 46px;       /* testata di contesto */
+  --h-schede: 33px;      /* nastro delle schede di lavoro */
+  --w-laterale: 244px;
+  --w-laterale-compressa: 58px;
+
   color-scheme: dark;
 }
 
+/* --- Tema chiaro -----------------------------------------------------------
+   Non e il tema scuro schiarito: sul bianco l'arancio del marchio perde
+   contrasto, quindi scende a una tostatura piu scura, e i collegamenti tornano
+   al blu dello Studio. Le superfici restano fredde, mai grigio ufficio. */
 html[data-tema="chiaro"],
 html[data-tema="chiaro"] body {
-  --sfondo: #f2f5f9;
-  --sfondo-2: #ffffff;
-  --sfondo-3: #eef2f8;
-  --sfondo-4: #e2e8f2;
-  --velo: rgba(15, 25, 45, .03);
-  --bordo: #d8dfe9;
-  --bordo-forte: #c2cbd9;
-  --bordo-tenue: #e6ebf2;
-  --testo: #131922;
-  --testo-2: #3f4a5a;
-  --testo-tenue: #667385;
-  --accento-velo: rgba(47, 111, 189, .1);
-  --accento-velo-forte: rgba(47, 111, 189, .2);
-  --ok-velo: rgba(32, 132, 80, .12);
-  --avviso-velo: rgba(180, 118, 16, .14);
-  --errore-velo: rgba(198, 55, 55, .12);
-  --info-velo: rgba(104, 76, 200, .12);
-  --viola: #6a53c9;
-  --ok: #1f8450;
-  --avviso: #b47610;
-  --errore: #c63737;
-  --urgente: #d93b3b;
-  --degradato-marchio-tenue: linear-gradient(165deg, rgba(47, 111, 189, .08), rgba(47, 111, 189, 0));
-  --ombra-marchio: 0 10px 26px -10px rgba(47, 111, 189, .35);
-  --ombra-1: 0 1px 2px rgba(20, 35, 60, .08);
-  --ombra-2: 0 4px 14px rgba(20, 35, 60, .1);
-  --ombra-3: 0 18px 48px rgba(20, 35, 60, .18);
+  --sfondo: #EEF1F6;
+  --sfondo-2: #FFFFFF;
+  --sfondo-3: #F4F7FA;
+  --sfondo-4: #E4EAF2;
+  --sfondo-incavo: #F7F9FC;
+  --velo: rgba(11, 35, 65, .03);
+  --bordo: #D7DFEA;
+  --bordo-forte: #BCC7D6;
+  --bordo-tenue: #E6EBF2;
+  --testo: #0B2341;
+  --testo-2: #3C4C61;
+  --testo-tenue: #667689;
+  --accento: #C06612;
+  --accento-chiaro: #E8843D;
+  --accento-scuro: #9A4F0B;
+  --accento-velo: rgba(232, 132, 61, .12);
+  --accento-velo-forte: rgba(232, 132, 61, .28);
+  --degradato-marchio: linear-gradient(135deg, #EE9550, #E8843D 52%, #C96A22);
+  --degradato-marchio-tenue: linear-gradient(168deg, rgba(232, 132, 61, .06), rgba(46, 122, 80, .03) 55%, transparent);
+  --ombra-marchio: 0 8px 20px -10px rgba(200, 106, 34, .5);
+  --marchio-blu: #1F5FA8;
+  --marchio-verde: #2E7A50;
+  --collegamento: #1F5FA8;
+  --ok: #2E7A50;
+  --ok-velo: rgba(46, 122, 80, .12);
+  --avviso: #9A6B12;
+  --avviso-velo: rgba(154, 107, 18, .13);
+  --errore: #C0392F;
+  --errore-velo: rgba(192, 57, 47, .11);
+  --urgente: #C0392F;
+  --info-velo: rgba(31, 95, 168, .1);
+  --viola: #6244C4;
+  --ombra-1: 0 1px 2px rgba(11, 35, 65, .07);
+  --ombra-2: 0 6px 18px -6px rgba(11, 35, 65, .14);
+  --ombra-3: 0 24px 60px -12px rgba(11, 35, 65, .22);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: light) {
   html:not([data-tema="scuro"]):not([data-tema="chiaro"]) {
-    --sfondo: #f2f5f9;
-    --sfondo-2: #ffffff;
-    --sfondo-3: #eef2f8;
-    --sfondo-4: #e2e8f2;
-    --velo: rgba(15, 25, 45, .03);
-    --bordo: #d8dfe9;
-    --bordo-forte: #c2cbd9;
-    --bordo-tenue: #e6ebf2;
-    --testo: #131922;
-    --testo-2: #3f4a5a;
-    --testo-tenue: #667385;
-    --accento-velo: rgba(47, 111, 189, .1);
-    --accento-velo-forte: rgba(47, 111, 189, .2);
-    --ok-velo: rgba(32, 132, 80, .12);
-    --avviso-velo: rgba(180, 118, 16, .14);
-    --errore-velo: rgba(198, 55, 55, .12);
-    --info-velo: rgba(104, 76, 200, .12);
-    --viola: #6a53c9;
-    --ok: #1f8450;
-    --avviso: #b47610;
-    --errore: #c63737;
-    --urgente: #d93b3b;
-    --degradato-marchio-tenue: linear-gradient(165deg, rgba(47, 111, 189, .08), rgba(47, 111, 189, 0));
-    --ombra-marchio: 0 10px 26px -10px rgba(47, 111, 189, .35);
-    --ombra-1: 0 1px 2px rgba(20, 35, 60, .08);
-    --ombra-2: 0 4px 14px rgba(20, 35, 60, .1);
-    --ombra-3: 0 18px 48px rgba(20, 35, 60, .18);
+    --sfondo: #EEF1F6;
+    --sfondo-2: #FFFFFF;
+    --sfondo-3: #F4F7FA;
+    --sfondo-4: #E4EAF2;
+    --sfondo-incavo: #F7F9FC;
+    --velo: rgba(11, 35, 65, .03);
+    --bordo: #D7DFEA;
+    --bordo-forte: #BCC7D6;
+    --bordo-tenue: #E6EBF2;
+    --testo: #0B2341;
+    --testo-2: #3C4C61;
+    --testo-tenue: #667689;
+    --accento: #C06612;
+    --accento-chiaro: #E8843D;
+    --accento-scuro: #9A4F0B;
+    --accento-velo: rgba(232, 132, 61, .12);
+    --accento-velo-forte: rgba(232, 132, 61, .28);
+    --degradato-marchio: linear-gradient(135deg, #EE9550, #E8843D 52%, #C96A22);
+    --degradato-marchio-tenue: linear-gradient(168deg, rgba(232, 132, 61, .06), rgba(46, 122, 80, .03) 55%, transparent);
+    --ombra-marchio: 0 8px 20px -10px rgba(200, 106, 34, .5);
+    --marchio-blu: #1F5FA8;
+    --marchio-verde: #2E7A50;
+    --collegamento: #1F5FA8;
+    --ok: #2E7A50;
+    --ok-velo: rgba(46, 122, 80, .12);
+    --avviso: #9A6B12;
+    --avviso-velo: rgba(154, 107, 18, .13);
+    --errore: #C0392F;
+    --errore-velo: rgba(192, 57, 47, .11);
+    --urgente: #C0392F;
+    --info-velo: rgba(31, 95, 168, .1);
+    --viola: #6244C4;
+    --ombra-1: 0 1px 2px rgba(11, 35, 65, .07);
+    --ombra-2: 0 6px 18px -6px rgba(11, 35, 65, .14);
+    --ombra-3: 0 24px 60px -12px rgba(11, 35, 65, .22);
     color-scheme: light;
   }
 }
@@ -179,14 +233,16 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-h1 { font-size: 19px; line-height: 1.25; margin: 0 0 4px; letter-spacing: -.01em; font-weight: 600; }
+h1 { font-size: 18px; line-height: 1.25; margin: 0 0 4px; letter-spacing: -.012em; font-weight: 650; }
 h2 {
   font-size: 11px; margin: 0 0 10px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .08em; color: var(--testo-tenue);
 }
 h3 { font-size: 13px; margin: 14px 0 6px; font-weight: 600; }
 
-a, .link { color: var(--accento); cursor: pointer; text-decoration: none; }
+/* I collegamenti restano blu: l'arancio in questa interfaccia significa
+ * "questa e l'azione principale", e una riga di testo non lo e mai. */
+a, .link { color: var(--collegamento); cursor: pointer; text-decoration: none; }
 .link:hover { text-decoration: underline; }
 
 .spazio { flex: 1; }
@@ -206,27 +262,87 @@ a, .link { color: var(--accento); cursor: pointer; text-decoration: none; }
 
 /* Un solo anello di messa a fuoco per tutta l'app, visibile solo da tastiera */
 :focus-visible { outline: 2px solid var(--accento); outline-offset: 1px; border-radius: var(--raggio-s); }
+/* Le cifre incolonnate: in un elenco di importi e di numeri di pratica le
+ * larghezze variabili delle cifre proporzionali fanno ballare le colonne. */
+.tabella td, .tabella th, .tessera-valore, .dati dd, .mono, .codice, .conteggio,
+.pill-conteggio, .badge, .centro-stato-valore { font-variant-numeric: tabular-nums; }
 :focus:not(:focus-visible) { outline: none; }
 
 .caricamento-iniziale {
-  height: 100vh; display: flex; align-items: center; justify-content: center;
+  height: 100vh; display: flex; flex-direction: column; gap: 14px;
+  align-items: center; justify-content: center;
   color: var(--testo-tenue); margin: 0;
 }
+.caricamento-iniziale img { opacity: .9; }
+.caricamento-iniziale p { margin: 0; }
 
 /* =============================================================================
  * 3. Guscio
+ *
+ * Il guscio e cio che resta fermo tutto il giorno, quindi e cio su cui si
+ * giudica il programma. Cinque fasce, dall'alto in basso:
+ *
+ *   barra dei titoli   marchio, nome della postazione, comandi finestra
+ *   testata            percorso, ricerca, spie, account
+ *   schede di lavoro   le pratiche aperte insieme
+ *   vista              il lavoro vero
+ *   barra di stato     chi, dove, da quando
+ *
+ * A sinistra la navigazione, che si comprime a sole icone. La riga colorata
+ * sulla voce attiva e l'unico arancio della colonna: se ce ne fossero due,
+ * nessuno dei due direbbe piu "sei qui".
  * ========================================================================== */
 
 .guscio { display: flex; height: 100vh; }
+html, body { height: 100%; }
+
+/* --- Barra dei titoli -----------------------------------------------------
+   Disegnata da noi perche quella di Windows non sa dire a quale server si e
+   collegati, e in uno Studio che lavora anche contro il collaudo e la prima
+   cosa da sapere. Trascinabile come una barra vera (`-webkit-app-region`). */
+
+.barra-titoli {
+  display: flex; align-items: center; gap: 10px;
+  height: var(--h-titolo); flex: 0 0 var(--h-titolo);
+  padding-left: 10px;
+  background: var(--sfondo-2);
+  border-bottom: 1px solid var(--bordo);
+  -webkit-app-region: drag;
+  user-select: none;
+}
+.barra-titoli .logo { border-radius: 4px; }
+.barra-titoli-nome {
+  font-size: 12px; font-weight: 600; letter-spacing: .01em; color: var(--testo-2);
+  white-space: nowrap;
+}
+.barra-titoli-contesto {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; color: var(--testo-tenue);
+  padding: 2px 9px; border-radius: 999px;
+  background: var(--sfondo); border: 1px solid var(--bordo-tenue);
+  max-width: 42vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.barra-titoli-contesto.collaudo { color: var(--avviso); border-color: var(--avviso); background: var(--avviso-velo); }
+
+.comandi-finestra { display: flex; margin-left: auto; -webkit-app-region: no-drag; }
+.comandi-finestra button {
+  width: 46px; height: var(--h-titolo);
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: 0; color: var(--testo-2); cursor: pointer;
+  transition: background .1s ease, color .1s ease;
+}
+.comandi-finestra button:hover { background: var(--sfondo-3); color: var(--testo); }
+.comandi-finestra button.chiudi:hover { background: #C42B1C; color: #fff; }
 
 /* --- Marchio -------------------------------------------------------------- */
 
 .marchio { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.marchio .logo { border-radius: var(--raggio-s); flex: 0 0 auto; display: block; }
-.marchio-testo { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
-.marchio-nome { font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
+.marchio .logo { flex: 0 0 auto; display: block; }
+.marchio-testo { display: flex; flex-direction: column; min-width: 0; line-height: 1.22; }
+.marchio-nome { font-weight: 650; letter-spacing: -.012em; white-space: nowrap; }
 .marchio-sotto {
-  color: var(--testo-tenue); font-size: 11px;
+  color: var(--testo-tenue); font-size: 10.5px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .07em;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .marchio-punto {
@@ -234,25 +350,32 @@ a, .link { color: var(--accento); cursor: pointer; text-decoration: none; }
   background: var(--degradato-marchio); flex: 0 0 auto;
   box-shadow: 0 0 0 3px var(--accento-velo);
 }
+/* Il lockup completo: solo dove c'e spazio per leggerlo (accesso, blocco). */
+.marchio-esteso { width: 232px; max-width: 62vw; height: auto; color: var(--testo); display: block; }
 
 /* --- Barra laterale ------------------------------------------------------- */
 
 .laterale {
-  width: 248px; flex: 0 0 248px;
+  width: var(--w-laterale); flex: 0 0 var(--w-laterale);
   background-color: var(--sfondo-2);
   background-image: var(--degradato-marchio-tenue);
   border-right: 1px solid var(--bordo);
   display: flex; flex-direction: column;
-  padding: 12px 10px 8px;
-  gap: 2px;
+  padding: 10px 8px 8px;
+  gap: 1px;
+  overflow-y: auto; overflow-x: hidden;
   transition: width .16s ease, flex-basis .16s ease;
 }
-.laterale .marchio { padding: 4px 6px 14px; }
+.laterale > * { flex: 0 0 auto; }
+.laterale .marchio { padding: 6px 8px 12px; }
+/* Lo spaziatore e l'unica cosa che deve cedere, e deve poter sparire del tutto
+   quando le sezioni non ci stanno in altezza. */
+.laterale > .spazio { flex: 1 1 0; min-height: 0; }
 
-.gruppo-menu { margin-top: 12px; }
+.gruppo-menu { margin-top: 14px; }
 .gruppo-titolo {
-  padding: 4px 10px; font-size: 10px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .1em; color: var(--testo-tenue);
+  padding: 4px 10px 5px; font-size: 9.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .13em; color: var(--testo-tenue);
   white-space: nowrap; overflow: hidden;
 }
 
@@ -261,58 +384,79 @@ a, .link { color: var(--accento); cursor: pointer; text-decoration: none; }
   display: flex; align-items: center; gap: 10px;
   width: 100%;
   background: none; border: 0; color: var(--testo-2);
-  padding: 7px 10px; border-radius: var(--raggio);
-  text-align: left; cursor: pointer; font: inherit;
-  transition: background .12s ease, color .12s ease;
+  padding: 6px 10px; border-radius: var(--raggio-s);
+  text-align: left; cursor: pointer; font: inherit; font-size: 12.5px;
+  transition: background .1s ease, color .1s ease;
 }
 .voce-menu:hover { background: var(--sfondo-3); color: var(--testo); }
-.voce-menu.attiva { background: var(--accento-velo); color: var(--accento-chiaro); font-weight: 600; }
+.voce-menu.attiva { background: var(--accento-velo); color: var(--testo); font-weight: 600; }
+.voce-menu.attiva .icona-menu { color: var(--accento); opacity: 1; }
 .voce-menu.attiva::before {
-  content: ""; position: absolute; left: 0; top: 7px; bottom: 7px;
-  width: 3px; border-radius: 0 3px 3px 0; background: var(--degradato-marchio);
+  content: ""; position: absolute; left: -8px; top: 5px; bottom: 5px;
+  width: 3px; border-radius: 0 3px 3px 0; background: var(--accento);
 }
-html[data-tema="chiaro"] .voce-menu.attiva { color: var(--accento-scuro); }
-.icona-menu { width: 18px; text-align: center; font-size: 14px; flex: 0 0 auto; opacity: .9; }
+html[data-tema="chiaro"] .voce-menu.attiva { color: var(--testo); }
+
+/* Le icone sono disegnate (lib/icone.js), non emoji: un pittogramma di
+ * sistema cambia faccia a ogni versione di Windows e non si puo colorare. */
+.icona-menu {
+  width: 17px; height: 17px; flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--testo-tenue); opacity: .95;
+}
+.icona-menu svg { width: 17px; height: 17px; display: block; }
 .etichetta-menu { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .voce-menu .tasto {
-  margin-left: auto; color: var(--testo-tenue); font-size: 10px;
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  color: var(--testo-tenue); font-size: 9.5px; font-weight: 600;
   padding: 1px 5px; border: 1px solid var(--bordo); border-radius: 4px;
-  background: var(--sfondo); white-space: nowrap;
+  background: var(--sfondo-2); white-space: nowrap; opacity: 0;
+  transition: opacity .1s ease; pointer-events: none;
 }
+.laterale:hover .voce-menu .tasto, .voce-menu:focus-visible .tasto { opacity: 1; }
 .voce-menu .conteggio-menu {
-  margin-left: auto; min-width: 18px; text-align: center;
-  background: var(--accento-scuro); color: #fff;
+  margin-left: auto; min-width: 18px; text-align: center; flex: 0 0 auto;
+  background: var(--accento); color: #16110C;
   font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px;
 }
 
 /* Laterale compressa: restano le icone, il resto sparisce senza saltelli */
-.guscio.compressa .laterale { width: 60px; flex-basis: 60px; padding-left: 8px; padding-right: 8px; }
+.guscio.compressa .laterale {
+  width: var(--w-laterale-compressa); flex-basis: var(--w-laterale-compressa);
+  padding-left: 7px; padding-right: 7px; overflow: visible;
+}
 .guscio.compressa .marchio-testo,
 .guscio.compressa .etichetta-menu,
 .guscio.compressa .voce-menu .tasto,
 .guscio.compressa .gruppo-titolo,
 .guscio.compressa .utente-testo { display: none; }
 .guscio.compressa .voce-menu { justify-content: center; padding: 8px 0; }
+.guscio.compressa .voce-menu.attiva::before { left: -7px; }
+.guscio.compressa .voce-menu .conteggio-menu {
+  position: absolute; top: 2px; right: 2px; margin: 0;
+  min-width: 15px; padding: 0 4px; font-size: 9px; line-height: 15px;
+}
 .guscio.compressa .gruppo-menu { margin-top: 10px; border-top: 1px solid var(--bordo-tenue); padding-top: 10px; }
 .guscio.compressa .utente { justify-content: center; }
+.guscio.compressa .laterale .marchio { justify-content: center; padding: 6px 0 12px; }
 
 .utente {
   display: flex; align-items: center; gap: 9px;
-  margin-top: 6px; padding: 9px 8px;
+  margin-top: 6px; padding: 8px;
   border-top: 1px solid var(--bordo);
   background: none; border-left: 0; border-right: 0; border-bottom: 0;
   color: var(--testo); text-align: left; cursor: pointer; font: inherit;
-  border-radius: var(--raggio);
+  border-radius: var(--raggio-s);
 }
 .utente:hover { background: var(--sfondo-3); }
 .utente-testo { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
-.utente-testo strong { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.utente-testo strong { font-size: 12.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pastiglia-utente {
-  width: 28px; height: 28px; border-radius: 50%; flex: 0 0 auto;
+  width: 28px; height: 28px; border-radius: 8px; flex: 0 0 auto;
   display: flex; align-items: center; justify-content: center;
   background: var(--degradato-marchio);
   box-shadow: var(--ombra-marchio);
-  color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .02em;
+  color: #17110A; font-size: 11px; font-weight: 800; letter-spacing: .02em;
 }
 
 /* --- Corpo e testata ------------------------------------------------------ */
@@ -321,34 +465,42 @@ html[data-tema="chiaro"] .voce-menu.attiva { color: var(--accento-scuro); }
 
 .testa {
   display: flex; align-items: center; gap: 8px;
-  padding: 8px 14px; min-height: 48px;
+  padding: 0 12px; min-height: var(--h-testa); flex: 0 0 var(--h-testa);
   border-bottom: 1px solid var(--bordo);
   background: var(--sfondo-2);
 }
 
-.briciole { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--testo-tenue); font-size: 12px; }
-.briciole strong { color: var(--testo); font-size: 13.5px; font-weight: 600; }
-.briciole .separatore { opacity: .45; }
+.briciole {
+  display: flex; align-items: center; gap: 7px; min-width: 0;
+  color: var(--testo-tenue); font-size: 11.5px; white-space: nowrap;
+}
+.briciole strong {
+  color: var(--testo); font-size: 14px; font-weight: 650; letter-spacing: -.01em;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.briciole .separatore { opacity: .4; }
 
 .cerca-globale {
   display: flex; align-items: center; gap: 8px;
-  width: 320px; max-width: 34vw;
-  background: var(--sfondo); color: var(--testo-tenue);
+  width: 340px; max-width: 34vw;
+  background: var(--sfondo-incavo); color: var(--testo-tenue);
   border: 1px solid var(--bordo); border-radius: var(--raggio);
-  padding: 5px 10px; cursor: text; font: inherit;
+  padding: 5px 8px 5px 10px; cursor: text; font: inherit; font-size: 12.5px;
   transition: border-color .12s ease, background .12s ease;
 }
 .cerca-globale:hover { border-color: var(--bordo-forte); background: var(--sfondo-3); }
 .cerca-globale .tasto {
-  margin-left: auto; font-size: 10px; color: var(--testo-tenue);
+  margin-left: auto; font-size: 10px; font-weight: 600; color: var(--testo-tenue);
   border: 1px solid var(--bordo); border-radius: 4px; padding: 1px 5px;
+  background: var(--sfondo-2);
 }
+.cerca-globale svg { width: 14px; height: 14px; flex: 0 0 auto; }
 
 .spia {
   display: inline-flex; align-items: center; gap: 6px;
-  font-size: 11.5px; color: var(--testo-tenue);
+  font-size: 11px; font-weight: 500; color: var(--testo-tenue);
   padding: 3px 9px; border: 1px solid var(--bordo); border-radius: 999px;
-  background: var(--sfondo);
+  background: var(--sfondo-incavo);
 }
 .spia::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--testo-tenue); }
 .spia.viva::before { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-velo); }
@@ -356,25 +508,29 @@ html[data-tema="chiaro"] .voce-menu.attiva { color: var(--accento-scuro); }
 .spia.giu::before { background: var(--errore); box-shadow: 0 0 0 3px var(--errore-velo); }
 
 .badge {
-  position: absolute; top: -5px; right: -6px;
+  position: absolute; top: -4px; right: -5px;
   min-width: 16px; height: 16px; padding: 0 4px;
   border-radius: 999px; background: var(--errore); color: #fff;
-  font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
+  font-size: 9.5px; font-weight: 700; line-height: 16px; text-align: center;
   border: 2px solid var(--sfondo-2);
 }
 .con-badge { position: relative; }
 
+/* Separatore verticale fra i gruppi di comandi della testata */
+.divisore-testa { width: 1px; height: 20px; background: var(--bordo); flex: 0 0 auto; margin: 0 2px; }
+
 /* --- Vista e intestazione di pagina --------------------------------------- */
 
-.vista { flex: 1; overflow: auto; padding: 16px 18px 22px; }
+.vista { flex: 1; overflow: auto; padding: 16px 18px 24px; }
 .titolo-pagina { margin-bottom: 12px; }
 
 .intestazione-pagina {
   display: flex; align-items: flex-end; gap: 12px;
-  padding: 14px 18px 12px;
+  padding: 13px 18px 12px;
   border-bottom: 1px solid var(--bordo);
   background: var(--sfondo-2);
 }
+.intestazione-pagina:empty { display: none; }
 .intestazione-pagina h1 { margin: 0; }
 .intestazione-pagina .sotto { margin-top: 2px; display: block; }
 
@@ -382,14 +538,15 @@ html[data-tema="chiaro"] .voce-menu.attiva { color: var(--accento-scuro); }
 
 .barra-stato {
   display: flex; align-items: center; gap: 14px;
-  padding: 4px 14px; min-height: 26px;
+  padding: 0 12px; min-height: 24px; flex: 0 0 24px;
   border-top: 1px solid var(--bordo);
   background: var(--sfondo-2);
-  color: var(--testo-tenue); font-size: 11.5px;
+  color: var(--testo-tenue); font-size: 11px;
 }
 .barra-stato .voce-stato { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-.barra-stato button.voce-stato { background: none; border: 0; color: inherit; font: inherit; cursor: pointer; }
-.barra-stato button.voce-stato:hover { color: var(--testo); }
+.barra-stato button.voce-stato { background: none; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 0 4px; height: 22px; border-radius: 4px; }
+.barra-stato button.voce-stato:hover { color: var(--testo); background: var(--sfondo-3); }
+.barra-stato svg { width: 12px; height: 12px; }
 
 /* --- Barra dell'aggiornamento --------------------------------------------- */
 
@@ -420,28 +577,33 @@ html[data-tema="chiaro"] .voce-menu.attiva { color: var(--accento-scuro); }
 .bottone:disabled:hover { background: var(--sfondo-3); border-color: var(--bordo); }
 
 .bottone.primario {
-  background: var(--degradato-marchio); border-color: var(--accento-scuro); color: #fff;
+  background: var(--degradato-marchio); border-color: var(--accento-scuro);
+  color: var(--su-accento); font-weight: 650;
   box-shadow: var(--ombra-marchio);
 }
-.bottone.primario:hover { filter: brightness(1.08); border-color: var(--accento); }
+.bottone.primario:hover { filter: brightness(1.06); border-color: var(--accento-chiaro); }
 .bottone.fantasma { background: transparent; border-color: transparent; color: var(--testo-2); }
 .bottone.fantasma:hover { background: var(--sfondo-3); color: var(--testo); border-color: transparent; }
 .bottone.pericolo { color: var(--errore); border-color: var(--bordo); }
 .bottone.pericolo:hover { background: var(--errore-velo); border-color: var(--errore); }
 .bottone.piccolo { padding: 3px 8px; font-size: 12px; }
 .bottone.largo { width: 100%; margin-top: 8px; }
-.bottone.attivo { border-color: var(--accento); background: var(--accento-scuro); color: #fff; }
+.bottone.attivo { border-color: var(--accento); background: var(--accento-velo-forte); color: var(--accento); font-weight: 600; }
 
 .icona {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px;
+  width: 30px; height: 30px; flex: 0 0 auto;
   background: none; border: 0; border-radius: var(--raggio-s);
-  color: var(--testo-tenue); cursor: pointer; font-size: 14px;
+  color: var(--testo-2); cursor: pointer; font-size: 14px;
+  transition: background .1s ease, color .1s ease;
 }
 .icona:hover { background: var(--sfondo-3); color: var(--testo); }
+.icona svg { width: 16px; height: 16px; display: block; }
+.icona.piccola { width: 24px; height: 24px; }
+.icona.piccola svg { width: 14px; height: 14px; }
 
 .campo {
-  background: var(--sfondo); color: var(--testo);
+  background: var(--sfondo-incavo); color: var(--testo);
   border: 1px solid var(--bordo); border-radius: var(--raggio);
   padding: var(--controllo-y) 9px; font: inherit;
   transition: border-color .12s ease, box-shadow .12s ease;
@@ -461,14 +623,14 @@ select.campo { cursor: pointer; }
 .campo-inline input[type="checkbox"] { accent-color: var(--accento); width: 15px; height: 15px; cursor: pointer; }
 
 textarea {
-  background: var(--sfondo); color: var(--testo);
+  background: var(--sfondo-incavo); color: var(--testo);
   border: 1px solid var(--bordo); border-radius: var(--raggio);
   padding: 8px 9px; font: inherit; resize: vertical;
 }
 
 .ricerca {
   flex: 1; min-width: 240px;
-  background: var(--sfondo); color: var(--testo);
+  background: var(--sfondo-incavo); color: var(--testo);
   border: 1px solid var(--bordo); border-radius: var(--raggio);
   padding: var(--controllo-y) 10px; font: inherit;
 }
@@ -487,13 +649,16 @@ textarea {
 .griglia-bottoni { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 
 /* Controllo segmentato: alternativa alla tendina quando le scelte sono poche */
-.segmenti { display: inline-flex; background: var(--sfondo); border: 1px solid var(--bordo); border-radius: var(--raggio); padding: 2px; gap: 2px; }
+.segmenti { display: inline-flex; background: var(--sfondo-incavo); border: 1px solid var(--bordo); border-radius: var(--raggio); padding: 2px; gap: 2px; }
 .segmenti button {
   background: none; border: 0; color: var(--testo-tenue);
   padding: 3px 10px; border-radius: var(--raggio-s); cursor: pointer; font: inherit;
 }
 .segmenti button:hover { color: var(--testo); }
-.segmenti button.attivo { background: var(--sfondo-4); color: var(--testo); font-weight: 600; }
+.segmenti button.attivo {
+  background: var(--sfondo-2); color: var(--testo); font-weight: 600;
+  box-shadow: var(--ombra-1), inset 0 -2px 0 var(--accento);
+}
 
 /* =============================================================================
  * 5. Dati
@@ -508,9 +673,9 @@ textarea {
 }
 .tabella { width: 100%; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
 .tabella th {
-  text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em;
+  text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .1em;
   color: var(--testo-tenue); font-weight: 700;
-  padding: 8px 10px; border-bottom: 1px solid var(--bordo);
+  padding: 9px 10px; border-bottom: 1px solid var(--bordo);
   position: sticky; top: 0; z-index: 1;
   background: var(--sfondo-3);
   white-space: nowrap;
@@ -545,12 +710,12 @@ textarea {
 
 .barra-massa {
   display: flex; align-items: center; gap: 8px;
-  background: var(--accento-scuro); color: #fff;
+  background: var(--degradato-marchio); color: var(--su-accento);
   padding: 7px 12px; border-radius: var(--raggio); margin-bottom: 10px;
   box-shadow: var(--ombra-2);
 }
-.barra-massa .bottone { background: rgba(255, 255, 255, .16); border-color: transparent; color: #fff; }
-.barra-massa .bottone:hover { background: rgba(255, 255, 255, .26); border-color: transparent; }
+.barra-massa .bottone { background: rgba(23, 17, 10, .1); border-color: rgba(23, 17, 10, .22); color: var(--su-accento); }
+.barra-massa .bottone:hover { background: rgba(23, 17, 10, .18); border-color: rgba(23, 17, 10, .3); }
 
 /* --- Pastiglie ------------------------------------------------------------ */
 
@@ -559,7 +724,7 @@ textarea {
   font-size: 11px; font-weight: 600; line-height: 1.5;
   border: 1px solid var(--bordo); white-space: nowrap;
 }
-.pill-stato-nuova { background: var(--accento-velo); color: var(--accento-chiaro); border-color: transparent; }
+.pill-stato-nuova { background: var(--accento-velo); color: var(--accento-chiaro); border-color: var(--accento-velo-forte); }
 html[data-tema="chiaro"] .pill-stato-nuova { color: var(--accento-scuro); }
 .pill-stato-presa_in_carico { background: var(--info-velo); color: var(--viola); border-color: transparent; }
 .pill-stato-in_lavorazione { background: var(--avviso-velo); color: var(--avviso); border-color: transparent; }
@@ -576,7 +741,7 @@ html[data-tema="chiaro"] .pill-stato-nuova { color: var(--accento-scuro); }
 .pill-durc-irregolare, .pill-durc-assente { color: var(--errore); border-color: var(--errore); }
 .pill-interno { background: var(--avviso-velo); color: var(--avviso); border-color: transparent; margin-left: 6px; }
 .pill-avviso { color: var(--avviso); border-color: var(--avviso); }
-.pill-conteggio { background: var(--accento-scuro); color: #fff; border-color: transparent; }
+.pill-conteggio { background: var(--accento); color: var(--su-accento); border-color: transparent; }
 .pill-esito-ticket, .pill-esito-creata { color: var(--ok); border-color: var(--ok); }
 .pill-esito-scartata, .pill-esito-ignorata { color: var(--testo-tenue); }
 
@@ -604,7 +769,8 @@ html[data-tema="chiaro"] .pill-stato-nuova { color: var(--accento-scuro); }
   content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
   background: var(--bordo); transition: background .12s ease;
 }
-.tessera:hover { border-color: var(--accento); transform: translateY(-2px); box-shadow: var(--ombra-marchio); }
+.tessera:hover { border-color: var(--accento); transform: translateY(-2px); box-shadow: var(--ombra-2); }
+.tessera:hover::after { background: var(--accento); }
 .tessera-valore { font-size: 27px; font-weight: 650; line-height: 1.1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
 .tessera-titolo { color: var(--testo-tenue); font-size: 11.5px; }
 .tessera.accento .tessera-valore { color: var(--accento); }
@@ -726,10 +892,13 @@ html[data-tema="chiaro"] .pill-stato-nuova { color: var(--accento-scuro); }
   position: relative; overflow: hidden;
   display: flex; flex-direction: column; justify-content: space-between;
   padding: 44px 46px;
+  /* I tre colori dello Studio, in campiture larghe: il verde sale da sinistra
+     come la falda del marchio, l'arancio scalda l'angolo in basso, il blu
+     notte regge tutto. Nessun colore nuovo rispetto alla carta intestata. */
   background:
-    radial-gradient(120% 90% at 12% 8%, rgba(79, 156, 245, .32), transparent 62%),
-    radial-gradient(90% 80% at 88% 96%, rgba(47, 111, 189, .28), transparent 60%),
-    linear-gradient(150deg, #101828, #0b1220 55%, #0d1a2e);
+    radial-gradient(115% 85% at 10% 4%, rgba(46, 122, 80, .34), transparent 60%),
+    radial-gradient(85% 75% at 92% 98%, rgba(232, 132, 61, .26), transparent 58%),
+    linear-gradient(150deg, #12294a, #0B2341 52%, #081a31);
   color: #eaf1fb;
 }
 /* Reticolo appena percepibile: da profondita senza rubare attenzione al modulo */
@@ -747,8 +916,8 @@ html[data-tema="chiaro"] .pill-stato-nuova { color: var(--accento-scuro); }
 
 .vetrina-claim { max-width: 460px; }
 .vetrina-claim h2 {
-  font-size: 11px; letter-spacing: .18em; color: rgba(234, 241, 251, .55);
-  margin-bottom: 14px;
+  font-size: 10px; letter-spacing: .2em; color: #F0B58A;
+  margin-bottom: 14px; text-transform: uppercase; font-weight: 700;
 }
 .vetrina-claim p.grande {
   font-size: 30px; line-height: 1.24; font-weight: 600; letter-spacing: -.02em;
@@ -759,11 +928,12 @@ html[data-tema="chiaro"] .pill-stato-nuova { color: var(--accento-scuro); }
 .vetrina-punti { list-style: none; margin: 26px 0 0; padding: 0; display: flex; flex-direction: column; gap: 11px; }
 .vetrina-punti li { display: flex; align-items: flex-start; gap: 11px; color: rgba(234, 241, 251, .84); font-size: 13px; }
 .vetrina-punti .segno {
-  flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%;
+  flex: 0 0 auto; width: 22px; height: 22px; border-radius: 7px;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .16);
-  font-size: 11px; color: #cfe3ff;
+  background: rgba(255, 255, 255, .09); border: 1px solid rgba(255, 255, 255, .15);
+  color: #F0B58A;
 }
+.accesso-vetrina .marchio-esteso { color: #fff; width: 264px; max-width: 100%; }
 .vetrina-piede { display: flex; gap: 16px; color: rgba(234, 241, 251, .42); font-size: 11.5px; flex-wrap: wrap; }
 
 .accesso-pannello {
@@ -1129,6 +1299,10 @@ kbd {
   border-right: 1px solid var(--bordo); padding: 6px 10px 20px;
   overflow-y: auto; display: flex; flex-direction: column; gap: 1px;
 }
+/* In una colonna flessibile che scorre, gli elementi bassi vengono schiacciati
+ * per far stare tutto: i titoli dei gruppi, che sono la riga piu corta, si
+ * ritrovavano tagliati a meta. In un elenco che scorre non si comprime niente. */
+.guida-indice > * { flex: 0 0 auto; }
 .guida-indice .gruppo-titolo { margin-top: 14px; }
 
 .guida-voce {
@@ -1193,3 +1367,128 @@ kbd {
   .guida-indice { border-right: 0; border-bottom: 1px solid var(--bordo); max-height: 220px; }
   .guida-lettura { padding: 18px; }
 }
+
+
+/* =============================================================================
+ * 9. Schede di lavoro, promemoria, aggiornamenti, copie
+ *
+ * Le quattro aggiunte di questa versione. Condividono la stessa regola del
+ * resto del foglio: nessun colore fuori dalle variabili, e nessun componente
+ * che non derivi dalla scala di raggio e spaziatura gia in uso.
+ * ========================================================================== */
+
+/* --- Guscio verticale -----------------------------------------------------
+   La barra dei titoli sta sopra tutto, laterale compresa: e la cornice della
+   finestra, non un elemento del contenuto. */
+
+.guscio-verticale { display: flex; flex-direction: column; height: 100vh; }
+.guscio-verticale > .guscio { flex: 1; height: auto; min-height: 0; }
+
+/* --- Nastro delle schede -------------------------------------------------- */
+
+.schede-lavoro {
+  flex: 0 0 var(--h-schede);
+  background: var(--sfondo);
+  border-bottom: 1px solid var(--bordo);
+  overflow: hidden;
+}
+.nastro-schede {
+  display: flex; align-items: stretch; gap: 2px;
+  height: var(--h-schede); padding: 0 6px;
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none;
+}
+.nastro-schede::-webkit-scrollbar { height: 0; }
+
+.scheda-lavoro {
+  position: relative;
+  display: flex; align-items: center;
+  flex: 0 1 auto; min-width: 96px; max-width: 220px;
+  background: var(--sfondo-2); border: 1px solid var(--bordo); border-bottom: 0;
+  border-radius: var(--raggio-s) var(--raggio-s) 0 0;
+  margin-top: 4px;
+  transition: background .1s ease, color .1s ease;
+}
+.scheda-lavoro:hover { background: var(--sfondo-3); }
+/* La scheda corrente si fonde con la vista: e sopra, non accanto. */
+.scheda-lavoro.attiva {
+  background: var(--sfondo-2); border-color: var(--bordo);
+  box-shadow: inset 0 2px 0 var(--accento);
+  margin-top: 3px;
+}
+.scheda-lavoro.attiva::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+  background: var(--sfondo-2);
+}
+
+.scheda-lavoro-apri {
+  display: flex; align-items: center; gap: 7px; min-width: 0;
+  flex: 1; padding: 0 4px 0 9px; height: 100%;
+  background: none; border: 0; color: var(--testo-2); font: inherit; font-size: 12px;
+  cursor: pointer; text-align: left;
+}
+.scheda-lavoro.attiva .scheda-lavoro-apri { color: var(--testo); font-weight: 600; }
+.scheda-lavoro-apri svg { flex: 0 0 auto; opacity: .8; }
+.scheda-lavoro.attiva .scheda-lavoro-apri svg { opacity: 1; color: var(--accento); }
+.scheda-lavoro-testo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.scheda-lavoro-chiudi {
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; margin-right: 5px; flex: 0 0 auto;
+  background: none; border: 0; border-radius: 4px;
+  color: var(--testo-tenue); cursor: pointer; opacity: 0;
+  transition: opacity .1s ease, background .1s ease;
+}
+.scheda-lavoro:hover .scheda-lavoro-chiudi,
+.scheda-lavoro.attiva .scheda-lavoro-chiudi,
+.scheda-lavoro.fissata .scheda-lavoro-chiudi { opacity: 1; }
+.scheda-lavoro-chiudi:hover { background: var(--errore-velo); color: var(--errore); }
+/* Una scheda fissata mostra una spunta al posto della croce: si vede che c'e
+   e si capisce che non e li per essere chiusa in fretta. */
+.scheda-lavoro.fissata { min-width: 0; }
+.scheda-lavoro.fissata .scheda-lavoro-chiudi { color: var(--ok); }
+.scheda-lavoro.fissata .scheda-lavoro-testo { max-width: 88px; }
+
+/* --- Promemoria ----------------------------------------------------------- */
+
+.riquadro.promemoria { padding: 12px 15px; margin-bottom: 9px; }
+.promemoria-testa { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 4px; }
+.riquadro.promemoria .testo { margin: 6px 0 10px; color: var(--testo-2); }
+.riquadro.promemoria .azioni { margin-top: 8px; }
+/* Uno scaduto si vede da lontano: e l'unico motivo per cui si apre la sezione. */
+.riquadro.promemoria.scaduto { border-color: var(--avviso); box-shadow: inset 3px 0 0 var(--avviso); }
+.riquadro.promemoria.concluso { opacity: .58; }
+
+/* --- Aggiornamenti -------------------------------------------------------- */
+
+.aggiornamento-riga {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 13px; border: 1px solid var(--bordo); border-radius: var(--raggio-l);
+  background: var(--sfondo-incavo); margin-bottom: 12px;
+}
+.aggiornamento-riga .stato-pallino { flex: 0 0 auto; }
+.aggiornamento-riga strong { display: block; }
+.aggiornamento-riga.pronta { border-color: var(--ok); background: var(--ok-velo); }
+.aggiornamento-riga.disponibile { border-color: var(--accento); background: var(--accento-velo); }
+.aggiornamento-riga.guasta { border-color: var(--errore); background: var(--errore-velo); }
+
+/* Barra di avanzamento: nessun elemento nuovo, e una riga con un riempimento */
+.avanzamento {
+  height: 6px; border-radius: 999px; overflow: hidden;
+  background: var(--sfondo-4); margin: 8px 0 4px;
+}
+.avanzamento > span {
+  display: block; height: 100%; border-radius: 999px;
+  background: var(--degradato-marchio);
+  transition: width .3s ease;
+}
+
+/* --- Copie di sicurezza --------------------------------------------------- */
+
+.copia-riga {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 4px; border-bottom: 1px solid var(--bordo-tenue);
+}
+.copia-riga:last-child { border-bottom: 0; }
+.copia-riga .mono { font-size: 11.5px; color: var(--testo-tenue); }
+.copia-riga .azioni { margin-left: auto; }

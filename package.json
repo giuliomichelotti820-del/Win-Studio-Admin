@@ -1,9 +1,9 @@
 {
   "name": "win-studio-admin",
   "productName": "Win Studio Admin",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Applicazione desktop Windows 10/11 per la gestione delle segnalazioni (ticket) e dell'operativita dello Studio Associato Amm. Burchielli.",
+  "description": "Applicazione desktop Windows 10/11 dello Studio Associato Amm. Burchielli: coda delle segnalazioni, anagrafiche, comunicazioni e controllo, con le stesse credenziali e gli stessi dati del sito.",
   "author": "Studio Associato Amm. Burchielli",
   "main": "src/main/main.js",
   "scripts": {
@@ -22,7 +22,9 @@
     "productName": "Win Studio Admin",
     "files": [
       "src/**/*",
-      "package.json"
+      "package.json",
+      "build/icon.ico",
+      "build/tray.png"
     ],
     "win": {
       "icon": "build/icon.ico",
@@ -33,14 +35,26 @@
             "x64"
           ]
         }
-      ]
+      ],
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "legalTrademarks": "Studio Associato Amm. Burchielli",
+      "requestedExecutionLevel": "asInvoker"
     },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
+      "language": "1040",
+      "displayLanguageSelector": false,
       "shortcutName": "Win Studio Admin",
+      "menuCategory": "Studio Associato Amm. Burchielli",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true,
+      "uninstallDisplayName": "Win Studio Admin ${version}",
+      "deleteAppDataOnUninstall": false,
       "differentialPackage": true,
+      "include": "build/installer.nsh",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
       "installerHeaderIcon": "build/icon.ico",
@@ -55,6 +69,14 @@
         "owner": "giuliomichelotti820-del",
         "repo": "Win-Studio-Admin",
         "releaseType": "release"
+      }
+    ],
+    "protocols": [
+      {
+        "name": "Win Studio Admin",
+        "schemes": [
+          "winstudio"
+        ]
       }
     ]
   },

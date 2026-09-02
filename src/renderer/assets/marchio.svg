@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Studio Associato Amm. Burchielli">
+  <title>Studio Associato Amm. Burchielli</title>
+  <!-- Marchio ufficiale dello Studio, identico a quello del sito
+       (assets/img/logo-mark.svg): stessa geometria, stessi sfumati, stessi
+       colori. Non e un ridisegno per l'app — e lo stesso file. -->
+  <defs>
+    <linearGradient id="marchioVerde" x1="10" y1="0" x2="90" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2E7A50"/>
+      <stop offset="45%" stop-color="#F4F8F6"/>
+      <stop offset="50%" stop-color="#FFFFFF"/>
+      <stop offset="55%" stop-color="#F4F8F6"/>
+      <stop offset="100%" stop-color="#2E7A50"/>
+    </linearGradient>
+    <linearGradient id="marchioArancio" x1="0" y1="63" x2="0" y2="99" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#E8843D"/>
+    </linearGradient>
+  </defs>
+  <polyline points="10,85 50,12 90,85" fill="none" stroke="url(#marchioVerde)" stroke-width="24" stroke-linejoin="miter" stroke-linecap="butt"/>
+  <polyline points="34,80 50,48 66,80" fill="none" stroke="#0B2341" stroke-width="15" stroke-linejoin="miter" stroke-linecap="butt"/>
+  <circle cx="50" cy="82" r="17" fill="url(#marchioArancio)"/>
+</svg>

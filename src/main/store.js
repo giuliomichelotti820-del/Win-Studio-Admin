@@ -51,6 +51,25 @@ const DEFAULTS = {
   // rapido. { id, nome, filtri }
   filtriSalvati: [],
 
+  // Ingrandimento dell'interfaccia (Ctrl+= / Ctrl+- / Ctrl+0). Vale per la
+  // postazione, non per l'account: dipende dal monitor che c'e sulla scrivania.
+  zoom: 1,
+
+  // Aggiornamenti: spento lo scaricamento automatico, l'app avvisa che c'e una
+  // versione nuova e aspetta che qualcuno prema "Scarica adesso".
+  aggiornamentiAutomatici: true,
+
+  // Copie di sicurezza dei dati locali (schede, allegati, promemoria,
+  // registro): una al giorno alla prima apertura utile, e si tengono le
+  // ultime dieci.
+  copieAutomatiche: true,
+  copieOgniGiorni: 1,
+  copieDaTenere: 10,
+
+  // Schede di lavoro aperte: si ritrovano al riavvio, come le finestre di un
+  // browser. { destinazione, etichetta, icona }
+  schedeAperte: [],
+
   finestra: { width: 1440, height: 900, maximized: true }
 };
 

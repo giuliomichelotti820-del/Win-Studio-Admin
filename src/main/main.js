@@ -19,6 +19,9 @@ const archivio = require("./archivio");
 const aggiornamenti = require("./aggiornamenti");
 const registro = require("./registro");
 const pin = require("./pin");
+const promemoria = require("./promemoria");
+const copie = require("./copie");
+const stampa = require("./stampa");
 
 let finestra = null;
 let tray = null;
@@ -33,7 +36,52 @@ const SVILUPPO = process.argv.includes("--dev");
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on("second-instance", mostraFinestra);
+  // Il secondo avvio porta in primo piano quello aperto — e, se e stato
+  // lanciato da un collegamento `winstudio://`, ci porta anche dove dice il
+  // collegamento. Su Windows l'indirizzo arriva negli argomenti della seconda
+  // istanza, non da un evento: e li che va cercato.
+  app.on("second-instance", (_evento, argomenti) => {
+    mostraFinestra();
+    apriCollegamento(argomenti);
+  });
+}
+
+/* --- Collegamenti winstudio:// -------------------------------------------
+ * Le email di servizio dello Studio possono portare un link diretto alla
+ * pratica: `winstudio://pratica/1204` la apre dentro l'app invece di
+ * costringere a cercarla nella coda. L'indirizzo lo registra l'installer
+ * (build/installer.nsh); qui si traduce in una destinazione della navigazione.
+ *
+ * Si accettano solo le forme conosciute: un indirizzo storto non deve poter
+ * pilotare l'app in un posto qualsiasi.
+ * ------------------------------------------------------------------------ */
+
+const DESTINAZIONI_COLLEGAMENTO = {
+  pratica: (valore) => (/^\d+$/.test(valore) ? `ticket:${valore}` : null),
+  ticket: (valore) => (/^\d+$/.test(valore) ? `ticket:${valore}` : null),
+  sezione: (valore) => (/^[a-z]{3,20}$/.test(valore) ? valore : null)
+};
+
+function destinazioneDaUrl(url) {
+  try {
+    const indirizzo = new URL(url);
+    if (indirizzo.protocol !== "winstudio:") return null;
+    const cosa = (indirizzo.hostname || "").toLowerCase();
+    const valore = decodeURIComponent(indirizzo.pathname.replace(/^\/+/, ""));
+    const traduci = DESTINAZIONI_COLLEGAMENTO[cosa];
+    return traduci ? traduci(valore) : null;
+  } catch {
+    return null;
+  }
+}
+
+function apriCollegamento(argomenti = process.argv) {
+  const url = [].concat(argomenti).find((a) => typeof a === "string" && a.startsWith("winstudio://"));
+  if (!url) return false;
+  const destinazione = destinazioneDaUrl(url);
+  if (!destinazione) return false;
+  vaiA(destinazione);
+  return true;
 }
 
 /* --- Finestra ------------------------------------------------------------ */
@@ -48,9 +96,18 @@ function creaFinestra() {
     minWidth: 1024,
     minHeight: 640,
     show: false,
-    backgroundColor: "#0d1017",
+    backgroundColor: impostazioni.tema === "chiaro" ? "#EEF1F6" : "#090D14",
     autoHideMenuBar: true,
     title: "Win Studio Admin",
+    icon: path.join(__dirname, "..", "..", "build", "icon.ico"),
+
+    // Cornice dello Studio al posto di quella di Windows: la barra dei titoli
+    // dell'app dice a quale server si e collegati, cosa che quella di sistema
+    // non puo dire, e recupera i 32 pixel di altezza che in un elenco denso
+    // valgono due righe di pratiche. I comandi finestra restano quelli veri
+    // (`titleBarOverlay` non serve: li disegniamo noi e li colleghiamo per IPC).
+    frame: false,
+    titleBarStyle: "hidden",
     webPreferences: {
       preload: path.join(__dirname, "..", "preload", "preload.js"),
       contextIsolation: true,
@@ -64,7 +121,11 @@ function creaFinestra() {
 
   finestra.once("ready-to-show", () => {
     if (geometria.maximized) finestra.maximize();
-    if (!impostazioni.avvioMinimizzato) finestra.show();
+    // Avviata da Windows all'accesso (installer.nsh passa --avvio-automatico)
+    // l'app parte nell'area di notifica: nessuno vuole una finestra a tutto
+    // schermo davanti al desktop appena acceso il computer.
+    const daAvvioAutomatico = process.argv.includes("--avvio-automatico");
+    if (!impostazioni.avvioMinimizzato && !daAvvioAutomatico) finestra.show();
     if (SVILUPPO) finestra.webContents.openDevTools({ mode: "detach" });
   });
 
@@ -79,6 +140,19 @@ function creaFinestra() {
 
   finestra.on("resize", salvaGeometria);
   finestra.on("move", salvaGeometria);
+
+  // La barra dei titoli disegna il bottone "ingrandisci" o "ripristina" a
+  // seconda dello stato: senza questi due eventi resterebbe quello sbagliato
+  // dopo un doppio clic sulla barra o uno Snap di Windows.
+  finestra.on("maximize", () => invia("app:finestra", { massimizzata: true }));
+  finestra.on("unmaximize", () => invia("app:finestra", { massimizzata: false }));
+
+  // Ingrandimento dell'interfaccia: chi lavora su un 27 pollici a 4K la vuole
+  // piu grande, chi sta su un portatile la vuole piu fitta. Si applica appena
+  // la pagina e pronta, altrimenti il primo disegno parte alla scala sbagliata.
+  finestra.webContents.on("did-finish-load", () => {
+    finestra.webContents.setZoomFactor(zoomValido(store.getImpostazioni().zoom));
+  });
 
   // Ogni link esterno va nel browser di sistema, mai dentro l'app.
   finestra.webContents.setWindowOpenHandler(({ url }) => {
@@ -99,6 +173,40 @@ function salvaGeometria() {
   }, 400);
 }
 
+/* --- Ingrandimento dell'interfaccia --------------------------------------
+ * Sei passi, dal 75% al 175%. Non e un cursore continuo di proposito: fra un
+ * gradino e l'altro si vede la differenza, e chi preme Ctrl+= tre volte deve
+ * arrivare dove voleva, non a un valore a caso.
+ * ---------------------------------------------------------------------- */
+
+const SCALE = [0.75, 0.9, 1, 1.15, 1.3, 1.5, 1.75];
+
+function zoomValido(valore) {
+  const numero = Number(valore);
+  if (!Number.isFinite(numero)) return 1;
+  return Math.min(SCALE[SCALE.length - 1], Math.max(SCALE[0], numero));
+}
+
+function cambiaZoom(passo) {
+  if (!finestra || finestra.isDestroyed()) return 1;
+  const attuale = zoomValido(store.getImpostazioni().zoom);
+  let prossimo;
+  if (passo === 0) {
+    prossimo = 1;
+  } else {
+    // L'indice piu vicino allo zoom corrente: dopo un Ctrl+rotellina il valore
+    // puo non stare esattamente su un gradino.
+    let vicino = 0;
+    for (let i = 1; i < SCALE.length; i += 1) {
+      if (Math.abs(SCALE[i] - attuale) < Math.abs(SCALE[vicino] - attuale)) vicino = i;
+    }
+    prossimo = SCALE[Math.min(SCALE.length - 1, Math.max(0, vicino + passo))];
+  }
+  finestra.webContents.setZoomFactor(prossimo);
+  store.setImpostazioni({ zoom: prossimo });
+  return prossimo;
+}
+
 function mostraFinestra() {
   if (!finestra || finestra.isDestroyed()) {
     creaFinestra();
@@ -112,23 +220,20 @@ function mostraFinestra() {
 /* --- Area di notifica ---------------------------------------------------- */
 
 function iconaTray() {
-  // Pallino chiaro disegnato al volo: evita di dipendere da un file binario
-  // nel repository e resta leggibile sulla barra di Windows.
-  const dimensione = 16;
-  const buffer = Buffer.alloc(dimensione * dimensione * 4);
-  for (let y = 0; y < dimensione; y += 1) {
-    for (let x = 0; x < dimensione; x += 1) {
-      const dx = x - 7.5;
-      const dy = y - 7.5;
-      const dentro = dx * dx + dy * dy <= 49;
-      const i = (y * dimensione + x) * 4;
-      buffer[i] = dentro ? 0x4f : 0x00;      // B
-      buffer[i + 1] = dentro ? 0x9c : 0x00;  // G
-      buffer[i + 2] = dentro ? 0xf5 : 0x00;  // R
-      buffer[i + 3] = dentro ? 0xff : 0x00;  // A
-    }
+  // Il marchio dello Studio, non un pallino generico: in un'area di notifica
+  // con quindici icone si riconosce quella giusta dalla forma, non dal colore.
+  const file = path.join(__dirname, "..", "..", "build", "tray.png");
+  const immagine = nativeImage.createFromPath(file);
+  if (!immagine.isEmpty()) return immagine.resize({ width: 16, height: 16, quality: "best" });
+
+  // Se il file manca (albero incompleto) meglio un quadrato chiaro che
+  // un'icona vuota, che su Windows diventa un buco nella barra.
+  const lato = 16;
+  const buffer = Buffer.alloc(lato * lato * 4);
+  for (let i = 0; i < lato * lato; i += 1) {
+    buffer[i * 4] = 0x3d; buffer[i * 4 + 1] = 0x84; buffer[i * 4 + 2] = 0xe8; buffer[i * 4 + 3] = 0xff;
   }
-  return nativeImage.createFromBuffer(buffer, { width: dimensione, height: dimensione });
+  return nativeImage.createFromBuffer(buffer, { width: lato, height: lato });
 }
 
 function creaTray() {
@@ -138,7 +243,19 @@ function creaTray() {
     { label: "Apri", click: mostraFinestra },
     { label: "Coda segnalazioni", click: () => vaiA("coda") },
     { label: "Nuove notifiche", click: () => vaiA("notifiche") },
+    { label: "Promemoria", click: () => vaiA("promemoria") },
+    { type: "separator" },
     { label: "Controlla aggiornamenti", click: () => aggiornamenti.controlla() },
+    { label: "Fai subito una copia di sicurezza", click: () => {
+      try {
+        const fatta = copie.crea({ motivo: "manuale", versione: app.getVersion() });
+        copie.pota(store.getImpostazioni().copieDaTenere || 10);
+        annota("copia-creata", { percorso: fatta.percorso });
+        invia("app:copia", fatta);
+      } catch (errore) {
+        console.error("Copia non riuscita:", errore.message);
+      }
+    } },
     { type: "separator" },
     { label: "Esci", click: () => { uscitaRichiesta = true; app.quit(); } }
   ]));
@@ -274,7 +391,14 @@ ipcMain.handle("app:stato", () => {
     cifraturaDisponibile: store.cifraturaDisponibile(),
     // Lo stato del PIN viaggia con lo stato generale: il guscio deve sapere
     // gia al primo disegno se proporre la configurazione rapida.
-    pin: sessione.user ? pin.stato(sessione.user, sessione.deviceId) : null
+    pin: sessione.user ? pin.stato(sessione.user, sessione.deviceId) : null,
+    // La finestra e disegnata dall'app: il guscio deve sapere subito se
+    // mostrare "ingrandisci" o "ripristina", e a quale scala partire.
+    massimizzata: !!(finestra && !finestra.isDestroyed() && finestra.isMaximized()),
+    zoom: zoomValido(store.getImpostazioni().zoom),
+    // Promemoria in scadenza: la pastiglia sulla voce di menu deve essere gia
+    // vera quando la barra laterale compare, non un secondo dopo.
+    promemoriaAperti: sessione.user ? promemoria.leggi({ utenteId: sessione.user.id }).length : 0
   };
 });
 
@@ -411,7 +535,114 @@ ipcMain.handle("api:scarica", (_e, { percorso, nomeFile }) => risultato((async (
 
 ipcMain.handle("aggiornamento:stato", () => aggiornamenti.stato());
 ipcMain.handle("aggiornamento:controlla", () => risultato(aggiornamenti.controlla()));
+ipcMain.handle("aggiornamento:scarica", () => risultato(aggiornamenti.scarica()));
 ipcMain.handle("aggiornamento:installa", () => aggiornamenti.installaOra(finestra));
+ipcMain.handle("aggiornamento:note", () => risultato(Promise.resolve({ url: aggiornamenti.apriNote() })));
+ipcMain.handle("aggiornamento:automatico", (_e, automatico) => risultato(Promise.resolve((() => {
+  store.setImpostazioni({ aggiornamentiAutomatici: !!automatico });
+  annota(automatico ? "aggiornamenti-automatici-accesi" : "aggiornamenti-automatici-spenti");
+  return aggiornamenti.impostaAutomatico(!!automatico);
+})())));
+
+/* --- Comandi della finestra e ingrandimento ------------------------------
+ * La barra dei titoli e disegnata dall'app, quindi i tre bottoni di destra
+ * devono arrivare fin qui: sono gli unici che possono davvero muovere la
+ * finestra di Windows.
+ * ---------------------------------------------------------------------- */
+
+ipcMain.handle("finestra:comando", (_e, comando) => {
+  if (!finestra || finestra.isDestroyed()) return { massimizzata: false };
+  if (comando === "riduci") finestra.minimize();
+  else if (comando === "chiudi") finestra.close();
+  else if (comando === "ingrandisci") {
+    if (finestra.isMaximized()) finestra.unmaximize(); else finestra.maximize();
+  }
+  return { massimizzata: finestra.isMaximized() };
+});
+
+ipcMain.handle("finestra:zoom", (_e, passo) => ({ zoom: cambiaZoom(Number(passo) || 0) }));
+
+/* --- Promemoria ----------------------------------------------------------- */
+
+ipcMain.handle("promemoria:leggi", (_e, filtri) => risultato(Promise.resolve(promemoria.leggi(filtri || {}))));
+ipcMain.handle("promemoria:aggiungi", (_e, voce) => risultato(Promise.resolve((() => {
+  const utente = store.getSessione().user;
+  const creato = promemoria.aggiungi({ ...voce, utenteId: utente ? utente.id : null });
+  annota("promemoria-creato", { quando: creato.quando, titolo: creato.titolo });
+  return creato;
+})())));
+ipcMain.handle("promemoria:fatto", (_e, { id, fatto }) => risultato(Promise.resolve(promemoria.segna(id, { fatto: !!fatto }))));
+ipcMain.handle("promemoria:rinvia", (_e, { id, minuti }) => risultato(Promise.resolve(promemoria.rinvia(id, minuti))));
+ipcMain.handle("promemoria:elimina", (_e, id) => risultato(Promise.resolve(promemoria.elimina(id))));
+
+/* --- Copie di sicurezza --------------------------------------------------- */
+
+ipcMain.handle("copie:elenco", () => risultato(Promise.resolve(copie.elenco())));
+ipcMain.handle("copie:crea", () => risultato(Promise.resolve((() => {
+  const fatta = copie.crea({ motivo: "manuale", versione: app.getVersion() });
+  copie.pota(store.getImpostazioni().copieDaTenere || 10);
+  annota("copia-creata", { percorso: fatta.percorso });
+  return fatta;
+})())));
+
+// Una copia fuori dalla cartella dati e l'unica che serve quando il disco si
+// rompe: qui si sceglie dove, e la si puo mettere su una chiavetta.
+ipcMain.handle("copie:esporta", () => risultato((async () => {
+  const scelta = await dialog.showOpenDialog(finestra, {
+    title: "Dove mettere la copia di sicurezza",
+    properties: ["openDirectory", "createDirectory"],
+    buttonLabel: "Metti qui la copia"
+  });
+  if (scelta.canceled || !scelta.filePaths[0]) return { annullato: true };
+  const fatta = copie.crea({ motivo: "esportata", versione: app.getVersion(), destinazione: scelta.filePaths[0] });
+  annota("copia-esportata", { percorso: fatta.percorso });
+  return fatta;
+})()));
+
+ipcMain.handle("copie:rimuovi", (_e, nome) => risultato(Promise.resolve(copie.rimuovi(nome))));
+
+ipcMain.handle("copie:ripristina", (_e, percorsoCopia) => risultato((async () => {
+  let percorso = percorsoCopia;
+  if (!percorso) {
+    const scelta = await dialog.showOpenDialog(finestra, {
+      title: "Quale copia ripristinare",
+      properties: ["openDirectory"],
+      defaultPath: copie.radiceCopie(),
+      buttonLabel: "Ripristina questa copia"
+    });
+    if (scelta.canceled || !scelta.filePaths[0]) return { annullato: true };
+    percorso = scelta.filePaths[0];
+  }
+
+  const conferma = dialog.showMessageBoxSync(finestra, {
+    type: "warning",
+    buttons: ["Ripristina e riavvia", "Annulla"],
+    defaultId: 1,
+    cancelId: 1,
+    title: "Ripristino dei dati locali",
+    message: "Le schede, i file allegati, i promemoria e il registro di questa postazione tornano com'erano nella copia.",
+    detail: "Lo stato attuale viene messo da parte in una copia di riserva, quindi il ripristino resta annullabile. L'applicazione si riavvia."
+  });
+  if (conferma !== 0) return { annullato: true };
+
+  const esito = copie.ripristina(percorso, { versione: app.getVersion() });
+  if (esito.impostazioni) store.setImpostazioni(esito.impostazioni);
+  annota("copia-ripristinata", { percorso, rimessi: esito.rimessi.join(", ") });
+
+  uscitaRichiesta = true;
+  app.relaunch();
+  setTimeout(() => app.exit(0), 400);
+  return esito;
+})()));
+
+/* --- Stampa --------------------------------------------------------------- */
+
+ipcMain.handle("stampa:pratica", (_e, dati) => risultato((async () => {
+  const esito = await stampa.pratica(finestra, { ...dati, versione: app.getVersion() });
+  if (esito.percorso) annota("pratica-stampata", { numero: dati && dati.numero, percorso: esito.percorso });
+  return esito;
+})()));
+ipcMain.handle("stampa:apri", (_e, percorso) => shell.openPath(percorso));
 
 ipcMain.handle("app:apri-esterno", (_e, url) => {
   if (/^https?:\/\//i.test(url)) shell.openExternal(url);
@@ -625,6 +856,9 @@ ipcMain.handle("documenti:carica", (_e, { condominioId, categoria, titolo, nota 
 
 app.whenReady().then(() => {
   app.setAppUserModelId("net.burchielli.winstudioadmin");
+  // Anche fuori dall'installer (avvio da sorgente, copia scompattata a mano)
+  // l'app si dichiara padrona dei collegamenti winstudio://.
+  try { app.setAsDefaultProtocolClient("winstudio"); } catch { /* senza permessi: pazienza */ }
   store.caricaImpostazioni();
   store.caricaSessione();
   creaFinestra();
@@ -633,7 +867,37 @@ app.whenReady().then(() => {
 
   // Aggiornamento automatico: cerca la versione pubblicata dall'ultimo push
   // sul repository, la scarica in sottofondo e la installa alla chiusura.
-  aggiornamenti.avvia(invia);
+  aggiornamenti.avvia(invia, store.getImpostazioni());
+
+  // Promemoria: partono con l'app perche altrimenti non suonano. Quelli
+  // scaduti mentre l'app era chiusa suonano adesso, una volta sola.
+  promemoria.avvia((tipo, voce) => {
+    if (tipo === "apri") {
+      mostraFinestra();
+      if (voce.destinazione) vaiA(voce.destinazione);
+      else vaiA("promemoria");
+      return;
+    }
+    invia("app:promemoria", voce);
+  });
+
+  // Copia di sicurezza dei dati locali, una volta al giorno alla prima
+  // apertura utile. Non blocca l'avvio: se fallisce, l'app parte lo stesso e
+  // il motivo finisce nel registro.
+  setTimeout(() => {
+    try {
+      const impostazioni = store.getImpostazioni();
+      const fatta = copie.copiaAutomaticaSeServe({
+        attiva: impostazioni.copieAutomatiche !== false,
+        ogniGiorni: impostazioni.copieOgniGiorni || 1,
+        quante: impostazioni.copieDaTenere || 10,
+        versione: app.getVersion()
+      });
+      if (fatta) annota("copia-automatica", { percorso: fatta.percorso, peso: fatta.peso });
+    } catch (errore) {
+      annota("copia-non-riuscita", { errore: errore.message });
+    }
+  }, 4000);
 
   // Richiamo rapido da qualunque applicazione: Ctrl+Alt+S riporta su l'app e
   // apre la ricerca. Se la combinazione e gia occupata da un altro programma
@@ -644,6 +908,10 @@ app.whenReady().then(() => {
       invia("app:scorciatoia-globale");
     });
   } catch { /* combinazione non disponibile */ }
+
+  // Aperta *da* un collegamento: la pagina deve prima esistere, altrimenti la
+  // destinazione arriva a una finestra che non ha ancora nessuno in ascolto.
+  finestra.webContents.once("did-finish-load", () => apriCollegamento(process.argv));
 });
 
 app.on("window-all-closed", () => {
@@ -652,4 +920,8 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", () => { uscitaRichiesta = true; });
-app.on("will-quit", () => { globalShortcut.unregisterAll(); aggiornamenti.ferma(); });
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
+  aggiornamenti.ferma();
+  promemoria.ferma();
+});

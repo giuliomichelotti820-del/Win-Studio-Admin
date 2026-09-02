@@ -14,7 +14,9 @@
  * ========================================================================== */
 
 import { el, svuota, toast, api, modale, dataOra } from "./lib/ui.js";
-import { marchio, NOME_STUDIO } from "./lib/marchio.js";
+import { marchio, logo, NOME_PRODOTTO } from "./lib/marchio.js";
+import { icona, iconaMenu } from "./lib/icone.js";
+import { creaSchede } from "./lib/schede.js";
 import { schermataAccesso } from "./views/accesso.js";
 import { sorveglia, ferma as fermaBlocco, bloccaOra } from "./lib/blocco.js";
 import { installaScorciatoie, mostraScorciatoie } from "./lib/scorciatoie.js";
@@ -34,40 +36,41 @@ const SEZIONI = [
   {
     gruppo: "Operativita",
     voci: [
-      { id: "panoramica", titolo: "Panoramica", icona: "◎", descrizione: "Come sta andando lo Studio oggi", modulo: () => import("./views/panoramica.js") },
-      { id: "coda", titolo: "Coda segnalazioni", icona: "▤", descrizione: "Le pratiche aperte, in ordine di lavorazione", modulo: () => import("./views/coda.js") },
-      { id: "archivio", titolo: "Archivio", icona: "🗄", descrizione: "Schede e documenti conservati sulla postazione", modulo: () => import("./views/archivio.js") }
+      { id: "panoramica", titolo: "Panoramica", icona: "panoramica", descrizione: "Come sta andando lo Studio oggi", modulo: () => import("./views/panoramica.js") },
+      { id: "coda", titolo: "Coda segnalazioni", icona: "coda", descrizione: "Le pratiche aperte, in ordine di lavorazione", modulo: () => import("./views/coda.js") },
+      { id: "promemoria", titolo: "Promemoria", icona: "sveglia", descrizione: "Gli impegni presi su questa postazione, con l'avviso all'ora giusta", modulo: () => import("./views/promemoria.js") },
+      { id: "archivio", titolo: "Archivio", icona: "archivio", descrizione: "Schede e documenti conservati sulla postazione", modulo: () => import("./views/archivio.js") }
     ]
   },
   {
     gruppo: "Anagrafiche",
     voci: [
-      { id: "condomini", titolo: "Condomini", icona: "🏢", descrizione: "Stabili amministrati e relative schede", modulo: () => import("./views/condomini.js") },
-      { id: "morosi", titolo: "Morosi", icona: "€", descrizione: "Posizioni debitorie e stato dei solleciti", modulo: () => import("./views/morosi.js") },
-      { id: "fornitori", titolo: "Fornitori", icona: "🔧", descrizione: "Imprese, referenti e regolarita documentale", modulo: () => import("./views/fornitori.js") }
+      { id: "condomini", titolo: "Condomini", icona: "condomini", descrizione: "Stabili amministrati e relative schede", modulo: () => import("./views/condomini.js") },
+      { id: "morosi", titolo: "Morosi", icona: "morosi", descrizione: "Posizioni debitorie e stato dei solleciti", modulo: () => import("./views/morosi.js") },
+      { id: "fornitori", titolo: "Fornitori", icona: "fornitori", descrizione: "Imprese, referenti e regolarita documentale", modulo: () => import("./views/fornitori.js") }
     ]
   },
   {
     gruppo: "Comunicazioni",
     voci: [
-      { id: "whatsapp", titolo: "WhatsApp", icona: "💬", descrizione: "Conversazioni con condomini e fornitori", modulo: () => import("./views/whatsapp.js") },
-      { id: "posta", titolo: "Posta in arrivo", icona: "✉", descrizione: "Messaggi da smistare in segnalazioni", modulo: () => import("./views/posta.js") },
-      { id: "notifiche", titolo: "Notifiche", icona: "🔔", descrizione: "Cosa e cambiato mentre non guardavi", modulo: () => import("./views/notifiche.js") }
+      { id: "whatsapp", titolo: "WhatsApp", icona: "whatsapp", descrizione: "Conversazioni con condomini e fornitori", modulo: () => import("./views/whatsapp.js") },
+      { id: "posta", titolo: "Posta in arrivo", icona: "posta", descrizione: "Messaggi da smistare in segnalazioni", modulo: () => import("./views/posta.js") },
+      { id: "notifiche", titolo: "Notifiche", icona: "notifiche", descrizione: "Cosa e cambiato mentre non guardavi", modulo: () => import("./views/notifiche.js") }
     ]
   },
   {
     gruppo: "Amministrazione",
     voci: [
-      { id: "studio", titolo: "Studio", icona: "👥", descrizione: "Persone dello Studio e carichi di lavoro", modulo: () => import("./views/staff.js") },
-      { id: "controllo", titolo: "Controllo", icona: "🛡", descrizione: "Sessioni, credenziali e attivita dello staff", modulo: () => import("./views/controllo.js") },
-      { id: "registro", titolo: "Registro attivita", icona: "📓", descrizione: "Cosa e stato fatto da questa postazione", modulo: () => import("./views/registro.js") },
-      { id: "impostazioni", titolo: "Impostazioni", icona: "⚙", descrizione: "Collegamento, sicurezza, aspetto e manutenzione", modulo: () => import("./views/impostazioni.js") }
+      { id: "studio", titolo: "Studio", icona: "studio", descrizione: "Persone dello Studio e carichi di lavoro", modulo: () => import("./views/staff.js") },
+      { id: "controllo", titolo: "Controllo", icona: "controllo", descrizione: "Sessioni, credenziali e attivita dello staff", modulo: () => import("./views/controllo.js") },
+      { id: "registro", titolo: "Registro attivita", icona: "registro", descrizione: "Cosa e stato fatto da questa postazione", modulo: () => import("./views/registro.js") },
+      { id: "impostazioni", titolo: "Impostazioni", icona: "impostazioni", descrizione: "Collegamento, sicurezza, aspetto e manutenzione", modulo: () => import("./views/impostazioni.js") }
     ]
   },
   {
     gruppo: "Aiuto",
     voci: [
-      { id: "guida", titolo: "Guida del programma", icona: "📘", descrizione: "Manuale completo: come si fa ogni cosa, e cosa fare quando non funziona", modulo: () => import("./views/guida.js") }
+      { id: "guida", titolo: "Guida del programma", icona: "guida", descrizione: "Manuale completo: come si fa ogni cosa, e cosa fare quando non funziona", modulo: () => import("./views/guida.js") }
     ]
   }
 ];
@@ -89,6 +92,8 @@ let vociStato = {};
 let ultimoAggiornamentoDati = null;
 let tendinaStato = null;
 let staccaScorciatoie = null;
+let schede = null;
+let bottoneIngrandisci = null;
 
 /* Cronologia della navigazione, per Alt+← e Alt+→.
  *
@@ -116,6 +121,59 @@ function ruolo(utente) {
   return utente.role === "super_admin" ? "Titolare" : "Dipendente";
 }
 
+/**
+ * Barra dei titoli dello Studio.
+ *
+ * Sostituisce quella di Windows per due motivi concreti: dice a quale server si
+ * e collegati — cosa che la barra di sistema non puo dire, e che in uno Studio
+ * che lavora anche contro il collaudo e la prima domanda da farsi — e restituisce
+ * l'altezza di due righe di coda. I tre bottoni a destra sono quelli veri:
+ * passano dall'IPC e muovono la finestra di Windows.
+ */
+function barraTitoli() {
+  let indirizzo = stato.impostazioni.baseUrl || "";
+  try { indirizzo = new URL(stato.impostazioni.baseUrl).host; } catch { /* scritto a mano */ }
+
+  // Un indirizzo che non e quello di produzione va detto, non nascosto: chi
+  // chiude una pratica sul collaudo credendo di essere in produzione se ne
+  // accorge il giorno dopo, dal condomino che richiama.
+  const produzione = /workers\.dev$|burchielli/i.test(indirizzo) && !/localhost|127\.0\.0\.1|:\d{4}$/.test(indirizzo);
+
+  const comando = async (nome) => {
+    const esito = await window.studio.finestra(nome);
+    aggiornaBottoneFinestra(esito && esito.massimizzata);
+  };
+
+  bottoneIngrandisci = el("button", {
+    title: "Ingrandisci", ariaLabel: "Ingrandisci", onclick: () => comando("ingrandisci")
+  }, [icona("finestra_max", 14)]);
+
+  return el("header", { class: "barra-titoli" }, [
+    logo(19),
+    el("span", { class: "barra-titoli-nome", text: NOME_PRODOTTO }),
+    el("span", {
+      class: `barra-titoli-contesto ${produzione ? "" : "collaudo"}`,
+      title: produzione
+        ? `Collegata al server dello Studio: ${indirizzo}`
+        : `Attenzione: questa non e l'installazione di produzione. Server: ${indirizzo}`
+    }, [
+      icona("server", 12),
+      el("span", { text: produzione ? indirizzo : `collaudo · ${indirizzo}` })
+    ]),
+    el("div", { class: "comandi-finestra" }, [
+      el("button", { title: "Riduci a icona", ariaLabel: "Riduci a icona", onclick: () => comando("riduci") }, [icona("finestra_min", 14)]),
+      bottoneIngrandisci,
+      el("button", { class: "chiudi", title: "Chiudi (l'app resta nell'area di notifica)", ariaLabel: "Chiudi", onclick: () => comando("chiudi") }, [icona("chiudi", 14)])
+    ])
+  ]);
+}
+
+function aggiornaBottoneFinestra(massimizzata) {
+  if (!bottoneIngrandisci) return;
+  svuota(bottoneIngrandisci).append(icona(massimizzata ? "finestra_ripristina" : "finestra_max", 14));
+  bottoneIngrandisci.title = massimizzata ? "Ripristina" : "Ingrandisci";
+}
+
 function costruisciGuscio() {
   svuota(radice);
 
@@ -123,7 +181,7 @@ function costruisciGuscio() {
 
   let scorciatoia = 0;
   const laterale = el("nav", { class: "laterale" }, [
-    marchio({ dimensione: 30, sottotitolo: NOME_STUDIO }),
+    marchio({ dimensione: 30, sottotitolo: "Amm. Burchielli" }),
     ...SEZIONI.map((gruppo) => el("div", { class: "gruppo-menu" }, [
       el("div", { class: "gruppo-titolo", text: gruppo.gruppo }),
       ...gruppo.voci.map((sezione) => {
@@ -135,7 +193,7 @@ function costruisciGuscio() {
           class: "voce-menu", dataSezione: sezione.id, title: sezione.descrizione,
           onclick: () => naviga(sezione.id)
         }, [
-          el("span", { class: "icona-menu", text: sezione.icona }),
+          iconaMenu(sezione.icona),
           el("span", { class: "etichetta-menu", text: sezione.titolo }),
           conteggio || (scorciatoia <= 9 ? el("span", { class: "tasto", text: `Ctrl+${scorciatoia}` }) : null)
         ]);
@@ -174,27 +232,39 @@ function costruisciGuscio() {
 
   const testa = el("header", { class: "testa" }, [
     el("button", {
-      class: "icona", text: "☰", title: "Comprimi la barra laterale (Ctrl+B)",
+      class: "icona", title: "Comprimi la barra laterale (Ctrl+B)", ariaLabel: "Comprimi la barra laterale",
       onclick: commutaLaterale
-    }),
+    }, [icona("menu")]),
+    el("button", {
+      class: "icona", title: "Indietro (Alt+←)", ariaLabel: "Indietro", onclick: () => spostaCronologia(-1)
+    }, [icona("freccia_sinistra")]),
+    el("button", {
+      class: "icona", title: "Avanti (Alt+→)", ariaLabel: "Avanti", onclick: () => spostaCronologia(1)
+    }, [icona("freccia_destra")]),
+    el("span", { class: "divisore-testa" }),
     briciole,
     el("span", { class: "spazio" }),
     el("button", { class: "cerca-globale", title: "Comando rapido (Ctrl+K)", onclick: apriPalette }, [
-      el("span", { text: "🔍" }),
+      icona("cerca", 14),
       el("span", { text: "Cerca pratiche, sezioni, azioni…" }),
       el("span", { class: "tasto", text: "Ctrl+K" })
     ]),
+    el("button", {
+      class: "icona", title: "Nuovo promemoria", ariaLabel: "Nuovo promemoria",
+      onclick: apriPromemoria
+    }, [icona("sveglia")]),
+    el("span", { class: "divisore-testa" }),
     spiaRete,
     tendinaStato.nodo,
     el("button", {
-      class: "icona con-badge", title: "Notifiche", onclick: () => naviga("notifiche")
-    }, [el("span", { text: "🔔" }), badgeNotifiche]),
+      class: "icona con-badge", title: "Notifiche", ariaLabel: "Notifiche", onclick: () => naviga("notifiche")
+    }, [icona("notifiche"), badgeNotifiche]),
     el("button", {
-      class: "icona bottone-tema", text: temaIcona(), title: "Cambia tema (Ctrl+Shift+T)",
+      class: "icona bottone-tema", title: "Cambia tema (Ctrl+Shift+T)", ariaLabel: "Cambia tema",
       onclick: ruotaTema
-    }),
-    el("button", { class: "icona", text: "📘", title: "Guida del programma (F1)", onclick: () => naviga("guida") }),
-    el("button", { class: "icona", text: "⏻", title: "Blocca la postazione (Ctrl+L)", onclick: () => bloccaOra(stato.utente) })
+    }, [icona(temaIcona())]),
+    el("button", { class: "icona", title: "Guida del programma (F1)", ariaLabel: "Guida", onclick: () => naviga("guida") }, [icona("guida")]),
+    el("button", { class: "icona", title: "Blocca la postazione (Ctrl+L)", ariaLabel: "Blocca la postazione", onclick: () => bloccaOra(stato.utente) }, [icona("blocca")])
   ]);
 
   /* --- Corpo ------------------------------------------------------------- */
@@ -203,12 +273,30 @@ function costruisciGuscio() {
   contenitoreVista = el("main", { class: "vista" });
   barraAggiornamento = el("div", { class: "barra-aggiornamento nascosta" });
 
-  radice.append(el("div", { class: "guscio" }, [
-    laterale,
-    el("div", { class: "corpo" }, [
-      testa, barraAggiornamento, intestazionePagina, contenitoreVista, barraStato()
+  // Le schede si costruiscono prima del montaggio perche fanno parte del
+  // guscio: il nastro sta fra la testata e la vista, dove sta su ogni
+  // programma che ne ha.
+  schede = creaSchede({
+    naviga,
+    impostazioni: stato.impostazioni,
+    salva: (parziali) => {
+      Object.assign(stato.impostazioni, parziali);
+      window.studio.impostazioni(parziali);
+    }
+  });
+
+  radice.append(el("div", { class: "guscio-verticale" }, [
+    barraTitoli(),
+    el("div", { class: "guscio" }, [
+      laterale,
+      el("div", { class: "corpo" }, [
+        testa, barraAggiornamento, schede.nodo, intestazionePagina, contenitoreVista, barraStato()
+      ])
     ])
   ]));
+
+  schede.ripristina();
+  aggiornaBottoneFinestra(stato.massimizzata);
 
   aggiornaBriciole = (sezione) => {
     svuota(briciole).append(
@@ -232,18 +320,23 @@ function barraStato() {
 
   vociStato = {
     sincronia: el("span", { class: "voce-stato", text: "In attesa del primo aggiornamento" }),
-    silenzio: el("span", { class: "voce-stato nascosta", text: "🔕 Notifiche silenziate" })
+    silenzio: el("span", { class: "voce-stato nascosta" }),
+    zoom: el("button", {
+      class: "voce-stato nascosta", title: "Ingrandimento dell'interfaccia — Ctrl+0 riporta al 100%",
+      onclick: () => cambiaZoom(0)
+    })
   };
 
   return el("footer", { class: "barra-stato" }, [
-    el("span", { class: "voce-stato", text: `${stato.utente.fullName} · ${ruolo(stato.utente)}` }),
-    el("span", { class: "voce-stato mono", text: server }),
+    el("span", { class: "voce-stato" }, [icona("utente", 12), el("span", { text: `${stato.utente.fullName} · ${ruolo(stato.utente)}` })]),
+    el("span", { class: "voce-stato" }, [icona("server", 12), el("span", { class: "mono", text: server })]),
     vociStato.sincronia,
     vociStato.silenzio,
+    vociStato.zoom,
     el("span", { class: "spazio" }),
-    el("button", { class: "voce-stato", text: "⌨ Scorciatoie (Ctrl+/)", onclick: mostraScorciatoie }),
-    el("button", { class: "voce-stato", text: "📘 Guida (F1)", onclick: () => naviga("guida") }),
-    el("button", { class: "voce-stato", text: "🩺 Diagnostica", onclick: () => naviga("impostazioni") }),
+    el("button", { class: "voce-stato", text: "Scorciatoie (Ctrl+/)", onclick: mostraScorciatoie }),
+    el("button", { class: "voce-stato", text: "Guida (F1)", onclick: () => naviga("guida") }),
+    el("button", { class: "voce-stato", text: "Diagnostica", onclick: () => naviga("impostazioni") }),
     el("span", { class: "voce-stato", text: `v${stato.versione}` })
   ]);
 }
@@ -284,7 +377,7 @@ function commutaLaterale() {
 const GIRO_TEMI = ["sistema", "chiaro", "scuro"];
 
 function temaIcona() {
-  return { sistema: "🖥", chiaro: "☀", scuro: "🌙" }[stato.impostazioni.tema] || "🖥";
+  return { sistema: "tema_sistema", chiaro: "tema_chiaro", scuro: "tema_scuro" }[stato.impostazioni.tema] || "tema_sistema";
 }
 
 function ruotaTema() {
@@ -296,7 +389,7 @@ function ruotaTema() {
   // anche da Ctrl+Shift+T e dal comando rapido, dove non c'e nessun bottone
   // sotto il dito.
   const bottone = document.querySelector(".bottone-tema");
-  if (bottone) bottone.textContent = temaIcona();
+  if (bottone) svuota(bottone).append(icona(temaIcona()));
   toast(`Tema: ${{ sistema: "come Windows", chiaro: "chiaro", scuro: "scuro" }[prossimo]}.`);
 }
 
@@ -330,6 +423,7 @@ function menuUtente() {
         "Sblocco veloce di questa postazione",
         apriConfigurazionePin
       ),
+      voce("Prendi un promemoria", "Ctrl+Shift+R", () => apriPromemoria()),
       voce("Impostazioni", "Collegamento, sicurezza, aspetto", () => naviga("impostazioni")),
       voce("Registro delle attivita", "Cosa e stato fatto da questo computer", () => naviga("registro")),
       voce("Guida del programma", "F1", () => naviga("guida")),
@@ -386,6 +480,15 @@ async function naviga(destinazione, parametri = {}) {
 
   ricorda(sezione, destinazione);
 
+  // La scheda si registra qui, non nelle viste: ogni apertura e una scheda, e
+  // una vista che si dimenticasse di dirlo sparirebbe dal nastro.
+  if (schede) {
+    schede.segna(destinazione, {
+      etichetta: sezione.id === "ticket" ? `Pratica ${parametro || ""}`.trim() : sezione.titolo,
+      icona: sezione.icona || "scheda"
+    });
+  }
+
   const ctx = {
     utente: stato.utente,
     impostazioni: stato.impostazioni,
@@ -399,7 +502,24 @@ async function naviga(destinazione, parametri = {}) {
     // Le viste possono appendere i propri comandi accanto al titolo di pagina
     // invece di inventarsi una barra tutta loro.
     azioniPagina: intestazionePagina,
-    segnalaSincronia
+    segnalaSincronia,
+
+    // La scheda di una pratica nasce con "Pratica 1234" perche il numero e
+    // tutto quello che si sa prima di aver caricato: appena la vista conosce
+    // l'oggetto, lo mette sulla linguetta.
+    rinominaScheda: (etichetta) => {
+      if (schede && etichetta) schede.segna(destinazione, { etichetta, icona: sezione.icona || "scheda" });
+    },
+
+    // Una vista con del testo non salvato registra qui la domanda da fare
+    // prima di cambiare scheda.
+    trattieniScheda: (domanda) => (schede ? schede.trattieni(domanda) : () => {}),
+
+    // Stampa della pratica su carta intestata dello Studio.
+    stampa: (dati) => window.studio.stampaPratica(dati),
+
+    // Promemoria collegato a quello che si sta guardando.
+    promemoria: (opzioni) => apriPromemoria(opzioni)
   };
 
   try {
@@ -422,7 +542,7 @@ function ricorda(sezione, destinazione) {
   const etichetta = sezione.id === "ticket" ? `Segnalazione ${destinazione.split(":")[1]}` : sezione.titolo;
   const indice = recenti.findIndex((r) => r.destinazione === destinazione);
   if (indice >= 0) recenti.splice(indice, 1);
-  recenti.unshift({ etichetta, destinazione, icona: sezione.icona || "▤" });
+  recenti.unshift({ etichetta, destinazione, icona: sezione.icona || "scheda" });
   recenti.splice(6);
 
   // Muoversi con Alt+← non deve riscrivere la cronologia, altrimenti non si
@@ -471,6 +591,49 @@ function apriConfigurazionePin() {
 }
 
 /* =============================================================================
+ * Ingrandimento dell'interfaccia
+ *
+ * Ctrl+= e Ctrl+- muovono l'app di un gradino, Ctrl+0 la riporta al 100%. La
+ * scala la applica il processo principale (`setZoomFactor`), non un `transform`
+ * CSS: cosi cresce anche il testo delle finestre di sistema e restano nitide le
+ * icone, che con uno zoom finto diventerebbero sfocate.
+ * ========================================================================== */
+
+async function cambiaZoom(passo) {
+  const esito = await window.studio.zoom(passo);
+  const scala = (esito && esito.zoom) || 1;
+  stato.impostazioni.zoom = scala;
+  mostraZoom(scala);
+  if (passo === 0) toast("Ingrandimento riportato al 100%.");
+}
+
+/* La voce in barra di stato compare solo quando l'ingrandimento non e al 100%:
+ * altrimenti sarebbe una riga fissa che dice sempre la stessa cosa. Serve a chi
+ * ha premuto Ctrl+= per sbaglio e non capisce perche tutto e diventato grande. */
+function mostraZoom(scala) {
+  if (!vociStato.zoom) return;
+  const valore = Number(scala) || 1;
+  vociStato.zoom.classList.toggle("nascosta", Math.abs(valore - 1) < 0.001);
+  vociStato.zoom.textContent = `Ingrandimento ${Math.round(valore * 100)}% · Ctrl+0 per tornare al 100%`;
+}
+
+/* =============================================================================
+ * Promemoria rapido
+ *
+ * Si apre dalla testata, dal comando rapido e dalla scheda di una pratica —
+ * dove arriva gia collegato alla pratica che si sta guardando, che e l'unico
+ * modo perche il promemoria serva davvero quando suona.
+ * ========================================================================== */
+
+async function apriPromemoria(opzioni = {}) {
+  const { nuovoPromemoria } = await import("./views/promemoria.js");
+  nuovoPromemoria({
+    ...opzioni,
+    fatto: () => { if (vistaCorrente === "promemoria") naviga("promemoria"); }
+  });
+}
+
+/* =============================================================================
  * Comando rapido (Ctrl+K)
  *
  * Una sola casella per tutto: le sezioni, le azioni piu frequenti, le viste
@@ -482,7 +645,7 @@ function apriConfigurazionePin() {
 function azioniPalette() {
   const viste = (stato.impostazioni.filtriSalvati || []).map((vista) => ({
     gruppo: "Viste salvate",
-    icona: "★",
+    icona: "coda",
     etichetta: vista.nome,
     dettaglio: "Coda con i filtri salvati",
     azione: () => naviga("coda", { ...vista.filtri, vistaSalvata: vista.id })
@@ -498,29 +661,42 @@ function azioniPalette() {
       gruppo: "Sezioni", icona: s.icona, etichetta: s.titolo, dettaglio: s.descrizione,
       azione: () => naviga(s.id)
     })),
-    { gruppo: "Coda", icona: "▤", etichetta: "Coda: solo urgenti aperte", azione: () => naviga("coda", { status: "aperte", priority: "urgente" }) },
-    { gruppo: "Coda", icona: "▤", etichetta: "Coda: non assegnate", azione: () => naviga("coda", { status: "aperte", assegnate: "nessuno" }) },
-    { gruppo: "Coda", icona: "▤", etichetta: "Coda: assegnate a me", azione: () => naviga("coda", { status: "aperte", assegnate: "mie" }) },
-    { gruppo: "Coda", icona: "▤", etichetta: "Coda: arrivate dal modulo contatti", azione: () => naviga("coda", { status: "aperte", channel: "contatto" }) },
-    { gruppo: "Controllo", icona: "🛡", etichetta: "Controllo: sessioni attive", azione: () => naviga("controllo", { scheda: "sessioni" }) },
-    { gruppo: "Controllo", icona: "🛡", etichetta: "Controllo: attivita dello staff", azione: () => naviga("controllo", { scheda: "attivita" }) },
-    { gruppo: "Controllo", icona: "🛡", etichetta: "Controllo: credenziali dipendenti", azione: () => naviga("controllo", { scheda: "dipendenti" }) },
-    { gruppo: "Controllo", icona: "🛡", etichetta: "Controllo: credenziali condomini", azione: () => naviga("controllo", { scheda: "condomini" }) },
-    { gruppo: "Sistema", icona: "◉", etichetta: "Stato del sistema: apri il quadro completo", dettaglio: "Server, email, WhatsApp, notifiche, sicurezza", azione: () => tendinaStato && tendinaStato.apri() },
-    { gruppo: "Sistema", icona: "↻", etichetta: "Ricontrolla adesso tutti i servizi", azione: () => tendinaStato && tendinaStato.aggiorna() },
-    { gruppo: "Guida", icona: "📘", etichetta: "Guida del programma", dettaglio: "Il manuale completo, con la ricerca", azione: () => naviga("guida") },
-    { gruppo: "Guida", icona: "📘", etichetta: "Guida: la sezione che ho aperto adesso", azione: apriGuidaContestuale },
+    { gruppo: "Coda", icona: "coda", etichetta: "Coda: solo urgenti aperte", azione: () => naviga("coda", { status: "aperte", priority: "urgente" }) },
+    { gruppo: "Coda", icona: "coda", etichetta: "Coda: non assegnate", azione: () => naviga("coda", { status: "aperte", assegnate: "nessuno" }) },
+    { gruppo: "Coda", icona: "coda", etichetta: "Coda: assegnate a me", azione: () => naviga("coda", { status: "aperte", assegnate: "mie" }) },
+    { gruppo: "Coda", icona: "coda", etichetta: "Coda: arrivate dal modulo contatti", azione: () => naviga("coda", { status: "aperte", channel: "contatto" }) },
+    { gruppo: "Controllo", icona: "controllo", etichetta: "Controllo: sessioni attive", azione: () => naviga("controllo", { scheda: "sessioni" }) },
+    { gruppo: "Controllo", icona: "controllo", etichetta: "Controllo: attivita dello staff", azione: () => naviga("controllo", { scheda: "attivita" }) },
+    { gruppo: "Controllo", icona: "controllo", etichetta: "Controllo: credenziali dipendenti", azione: () => naviga("controllo", { scheda: "dipendenti" }) },
+    { gruppo: "Controllo", icona: "controllo", etichetta: "Controllo: credenziali condomini", azione: () => naviga("controllo", { scheda: "condomini" }) },
+    { gruppo: "Sistema", icona: "info", etichetta: "Stato del sistema: apri il quadro completo", dettaglio: "Server, email, WhatsApp, notifiche, sicurezza", azione: () => tendinaStato && tendinaStato.apri() },
+    { gruppo: "Sistema", icona: "aggiorna", etichetta: "Ricontrolla adesso tutti i servizi", azione: () => tendinaStato && tendinaStato.aggiorna() },
+    { gruppo: "Guida", icona: "guida", etichetta: "Guida del programma", dettaglio: "Il manuale completo, con la ricerca", azione: () => naviga("guida") },
+    { gruppo: "Guida", icona: "guida", etichetta: "Guida: la sezione che ho aperto adesso", azione: apriGuidaContestuale },
     ...GUIDA_RAPIDA.map(([capitolo, etichetta]) => ({
-      gruppo: "Guida", icona: "›", etichetta: `Guida: ${etichetta}`, azione: () => naviga(`guida:${capitolo}`)
+      gruppo: "Guida", icona: "guida", etichetta: `Guida: ${etichetta}`, azione: () => naviga(`guida:${capitolo}`)
     })),
-    { gruppo: "Guida", icona: "⌨", etichetta: "Scorciatoie da tastiera", azione: mostraScorciatoie },
-    { gruppo: "Postazione", icona: "🔑", etichetta: stato.pin && stato.pin.configurato ? "Cambia il PIN rapido di accesso" : "Imposta il PIN rapido di accesso", azione: apriConfigurazionePin },
-    { gruppo: "Postazione", icona: "🔔", etichetta: "Aggiorna le notifiche adesso", azione: () => window.studio.aggiornaNotifiche() },
-    { gruppo: "Postazione", icona: "🔕", etichetta: stato.impostazioni.nonDisturbare ? "Riattiva le notifiche di Windows" : "Silenzia le notifiche di Windows", azione: commutaSilenzio },
-    { gruppo: "Postazione", icona: "🎨", etichetta: "Cambia tema", azione: ruotaTema },
-    { gruppo: "Postazione", icona: "☰", etichetta: "Comprimi o riapri la barra laterale", azione: commutaLaterale },
-    { gruppo: "Postazione", icona: "⏻", etichetta: "Blocca la postazione", azione: () => bloccaOra(stato.utente) },
-    { gruppo: "Postazione", icona: "🚪", etichetta: "Esci dall'account", azione: async () => { await window.studio.logout(); location.reload(); } }
+    { gruppo: "Guida", icona: "scheda", etichetta: "Scorciatoie da tastiera", azione: mostraScorciatoie },
+    { gruppo: "Postazione", icona: "blocca", etichetta: stato.pin && stato.pin.configurato ? "Cambia il PIN rapido di accesso" : "Imposta il PIN rapido di accesso", azione: apriConfigurazionePin },
+    { gruppo: "Postazione", icona: "notifiche", etichetta: "Aggiorna le notifiche adesso", azione: () => window.studio.aggiornaNotifiche() },
+    { gruppo: "Postazione", icona: "notifiche", etichetta: stato.impostazioni.nonDisturbare ? "Riattiva le notifiche di Windows" : "Silenzia le notifiche di Windows", azione: commutaSilenzio },
+    { gruppo: "Postazione", icona: "tema_chiaro", etichetta: "Cambia tema", azione: ruotaTema },
+    { gruppo: "Postazione", icona: "menu", etichetta: "Comprimi o riapri la barra laterale", azione: commutaLaterale },
+    { gruppo: "Postazione", icona: "blocca", etichetta: "Blocca la postazione", azione: () => bloccaOra(stato.utente) },
+    { gruppo: "Postazione", icona: "sveglia", etichetta: "Prendi un promemoria", dettaglio: "Avviso di Windows all'ora che scegli", azione: () => apriPromemoria() },
+    { gruppo: "Postazione", icona: "piu", etichetta: "Ingrandisci l'interfaccia", azione: () => cambiaZoom(1) },
+    { gruppo: "Postazione", icona: "meno", etichetta: "Rimpicciolisci l'interfaccia", azione: () => cambiaZoom(-1) },
+    { gruppo: "Postazione", icona: "aggiorna", etichetta: "Riporta l'interfaccia al 100%", azione: () => cambiaZoom(0) },
+    { gruppo: "Postazione", icona: "scheda", etichetta: "Chiudi tutte le schede di lavoro", azione: () => schede && schede.chiudiTutte() },
+    { gruppo: "Postazione", icona: "salvagente", etichetta: "Fai adesso una copia di sicurezza", dettaglio: "Schede, allegati, promemoria e registro di questa postazione", azione: async () => {
+      const esito = await window.studio.copiaCrea();
+      toast(esito.ok ? "Copia di sicurezza creata." : (esito.errore || "Copia non riuscita."), esito.ok ? "ok" : "errore");
+    } },
+    { gruppo: "Postazione", icona: "scarica", etichetta: "Controlla se c'e una versione nuova", azione: async () => {
+      await window.studio.controllaAggiornamento();
+      naviga("impostazioni");
+    } },
+    { gruppo: "Postazione", icona: "spegni", etichetta: "Esci dall'account", azione: async () => { await window.studio.logout(); location.reload(); } }
   ];
 }
 
@@ -530,6 +706,10 @@ const GUIDA_RAPIDA = [
   ["pin", "il PIN rapido"],
   ["stato-sistema", "lo stato del sistema"],
   ["coda", "la coda delle segnalazioni"],
+  ["schede", "le schede di lavoro"],
+  ["promemoria", "i promemoria"],
+  ["copie", "le copie di sicurezza"],
+  ["aggiornamenti", "gli aggiornamenti"],
   ["scorciatoie", "tutte le scorciatoie"],
   ["problemi", "quando qualcosa non va"],
   ["domande", "domande frequenti"]
@@ -592,7 +772,7 @@ function apriPalette() {
         class: `palette-voce ${i === indice ? "attiva" : ""}`,
         onclick: () => { chiudi(); voce.azione(); }
       }, [
-        el("span", { class: "icona-menu", text: voce.icona || "›" }),
+        iconaMenu(voce.icona || "scheda", 16),
         el("span", { class: "testi" }, [
           el("span", { text: voce.etichetta }),
           voce.dettaglio ? el("span", { class: "sotto", text: voce.dettaglio }) : null
@@ -624,7 +804,7 @@ function apriPalette() {
         const dati = await api.get(`/api/tickets?q=${encodeURIComponent(q)}&perPage=8&status=`);
         const trovate = (dati.tickets || []).map((t) => ({
           gruppo: "Segnalazioni",
-          icona: "▤",
+          icona: "coda",
           etichetta: `${t.ticket_number} · ${t.subject}`,
           dettaglio: `${t.condominio_nome || "—"} · ${t.status}`,
           azione: () => naviga(`ticket:${t.id}`)
@@ -675,9 +855,14 @@ function aggiornaSpiaSilenzio() {
   const orario = stato.impostazioni.orarioLavoro || {};
   const silenzio = stato.impostazioni.nonDisturbare || orario.attivo;
   vociStato.silenzio.classList.toggle("nascosta", !silenzio);
-  vociStato.silenzio.textContent = stato.impostazioni.nonDisturbare
-    ? "🔕 Non disturbare acceso"
-    : "🕗 Notifiche solo in orario di lavoro";
+  svuota(vociStato.silenzio).append(
+    icona("notifiche", 12),
+    el("span", {
+      text: stato.impostazioni.nonDisturbare
+        ? "Non disturbare acceso"
+        : "Notifiche solo in orario di lavoro"
+    })
+  );
 }
 
 /* =============================================================================
@@ -715,7 +900,16 @@ function scorciatoieGlobali() {
         toast("Controllo delle novita richiesto.", "ok");
       },
       indietro: () => spostaCronologia(-1),
-      avanti: () => spostaCronologia(1)
+      avanti: () => spostaCronologia(1),
+
+      promemoria: () => apriPromemoria(),
+      "zoom-piu": () => cambiaZoom(1),
+      "zoom-meno": () => cambiaZoom(-1),
+      "zoom-zero": () => cambiaZoom(0),
+
+      "scheda-avanti": () => schede && schede.scorri(1),
+      "scheda-indietro": () => schede && schede.scorri(-1),
+      "scheda-chiudi": () => schede && schede.chiudi(cronologia.voci[cronologia.cursore])
     },
 
     vaiA: (idSezione) => naviga(idSezione),
@@ -753,6 +947,7 @@ async function avvia() {
 
   costruisciGuscio();
   aggiornaSpiaSilenzio();
+  mostraZoom(stato.zoom);
   sorveglia({ minuti: stato.impostazioni.bloccoMinuti, utente: stato.utente });
   await naviga(stato.impostazioni.ultimaVista || "panoramica");
 
@@ -820,6 +1015,17 @@ function mostraAggiornamento(fase) {
  * ========================================================================== */
 
 window.studio.su("app:aggiornamento", mostraAggiornamento);
+
+// Doppio clic sulla barra dei titoli, Snap di Windows, tasto Windows+↑: la
+// finestra si ingrandisce senza passare dai nostri bottoni, e il bottone deve
+// seguirla.
+window.studio.su("app:finestra", ({ massimizzata }) => aggiornaBottoneFinestra(massimizzata));
+
+// Un promemoria suonato mentre la barra laterale e a schermo: il conteggio
+// accanto alla voce si aggiorna da solo, senza aspettare che qualcuno ci vada.
+window.studio.su("app:promemoria", () => {
+  if (stato && stato.autenticato) toast("Hai un promemoria in scadenza.", "avviso");
+});
 
 window.studio.su("app:naviga", (destinazione) => { if (stato && stato.autenticato) naviga(destinazione); });
 

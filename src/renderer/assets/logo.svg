@@ -1,29 +1,34 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Studio Associato Amm. Burchielli">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Studio Associato Amm. Burchielli">
+  <title>Studio Associato Amm. Burchielli</title>
+  <!-- Il marchio dello Studio dentro una tessera chiara.
+       Il cuore del marchio e una "A" blu notte: su una barra laterale scura
+       sparirebbe. La tessera bianca e la stessa che Windows mostra sulla barra
+       delle applicazioni, quindi il simbolo dell'app e quello dell'icona
+       coincidono ovunque compaiano. -->
   <defs>
-    <linearGradient id="sfondo" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#2f6fbd"/>
-      <stop offset="1" stop-color="#1b3f70"/>
+    <linearGradient id="tesseraFondo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EEF2F6"/>
     </linearGradient>
-    <linearGradient id="lastra" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity=".97"/>
-      <stop offset="1" stop-color="#dbe7f7" stop-opacity=".92"/>
+    <linearGradient id="logoVerde" x1="24" y1="0" x2="104" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2E7A50"/>
+      <stop offset="45%" stop-color="#F4F8F6"/>
+      <stop offset="50%" stop-color="#FFFFFF"/>
+      <stop offset="55%" stop-color="#F4F8F6"/>
+      <stop offset="100%" stop-color="#2E7A50"/>
+    </linearGradient>
+    <linearGradient id="logoArancio" x1="0" y1="82" x2="0" y2="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#E8843D"/>
     </linearGradient>
   </defs>
 
-  <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="url(#sfondo)"/>
-  <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="1"/>
+  <rect x="1" y="1" width="126" height="126" rx="28" fill="url(#tesseraFondo)"/>
+  <rect x="1" y="1" width="126" height="126" rx="28" fill="none" stroke="#0B2341" stroke-opacity=".14" stroke-width="2"/>
 
-  <!-- Palazzo: lo Studio amministra condomini, il marchio lo dice senza scriverlo -->
-  <path d="M17 47V22l15-8 15 8v25z" fill="url(#lastra)"/>
-  <path d="M17 47V22l15-8 15 8v25" fill="none" stroke="#0f2b4d" stroke-opacity=".18" stroke-width="1.2" stroke-linejoin="round"/>
-
-  <g fill="#2f6fbd" fill-opacity=".85">
-    <rect x="22" y="26" width="6" height="6" rx="1.2"/>
-    <rect x="36" y="26" width="6" height="6" rx="1.2"/>
-    <rect x="22" y="36" width="6" height="6" rx="1.2"/>
-    <rect x="36" y="36" width="6" height="6" rx="1.2"/>
+  <g transform="translate(64 66) scale(.78) translate(-64 -64)">
+    <polyline points="24,101 64,28 104,101" fill="none" stroke="url(#logoVerde)" stroke-width="24" stroke-linejoin="miter" stroke-linecap="butt"/>
+    <polyline points="48,96 64,64 80,96" fill="none" stroke="#0B2341" stroke-width="15" stroke-linejoin="miter" stroke-linecap="butt"/>
+    <circle cx="64" cy="98" r="17" fill="url(#logoArancio)"/>
   </g>
-
-  <rect x="29.5" y="38" width="5" height="9" rx="1.4" fill="#1b3f70" fill-opacity=".9"/>
-  <rect x="14" y="47" width="36" height="4" rx="1.6" fill="#ffffff" fill-opacity=".95"/>
 </svg>

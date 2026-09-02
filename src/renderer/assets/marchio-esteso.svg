@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 134" role="img" aria-label="Amm. Burchielli — Gestioni immobiliari e patrimoniali dal 1970">
+  <title>Amm. Burchielli — Gestioni immobiliari e patrimoniali dal 1970</title>
+  <!-- Lockup verticale dello Studio, come sulla carta intestata: marchio,
+       ragione sociale, riga di attivita. Il testo segue `currentColor`, cosi
+       la stessa risorsa serve la schermata chiara e quella scura. -->
+  <defs>
+    <linearGradient id="estesoVerde" x1="137.2" y1="0" x2="202.8" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2E7A50"/>
+      <stop offset="45%" stop-color="#F4F8F6"/>
+      <stop offset="50%" stop-color="#FFFFFF"/>
+      <stop offset="55%" stop-color="#F4F8F6"/>
+      <stop offset="100%" stop-color="#2E7A50"/>
+    </linearGradient>
+    <linearGradient id="estesoArancio" x1="0" y1="57.7" x2="0" y2="87.2" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#E8843D"/>
+    </linearGradient>
+  </defs>
+
+  <polyline points="137.2,75.7 170,15.8 202.8,75.7" fill="none" stroke="url(#estesoVerde)" stroke-width="19.7" stroke-linejoin="miter" stroke-linecap="butt"/>
+  <polyline points="156.9,71.6 170,45.4 183.1,71.6" fill="none" stroke="#0B2341" stroke-width="12.3" stroke-linejoin="miter" stroke-linecap="butt"/>
+  <circle cx="170" cy="73.2" r="13.9" fill="url(#estesoArancio)"/>
+
+  <text x="170" y="108" text-anchor="middle" fill="currentColor"
+        font-family="Segoe UI, Inter, system-ui, sans-serif" font-size="24" font-weight="700"
+        font-style="italic" letter-spacing="1.2">AMM. BURCHIELLI</text>
+  <text x="170" y="125" text-anchor="middle" fill="currentColor" opacity=".68"
+        font-family="Segoe UI, Inter, system-ui, sans-serif" font-size="10.5" font-weight="500"
+        font-style="italic" letter-spacing=".7">Gestioni immobiliari e patrimoniali · dal 1970</text>
+</svg>

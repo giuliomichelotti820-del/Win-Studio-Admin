@@ -51,10 +51,60 @@ export default async function monta(radice, ctx) {
     }
   }
 
+  /* --- Stampa ---------------------------------------------------------------
+   * La vista manda i dati che ha gia a schermo; il documento — carta intestata,
+   * impaginazione, numeri di pagina — lo compone il processo principale, che e
+   * anche l'unico posto in cui i valori vengono resi innocui prima di finire
+   * dentro dell'HTML.
+   * ---------------------------------------------------------------------- */
+
+  async function stampaPratica() {
+    if (!ticket) return;
+    const esito = await ctx.stampa({
+      numero: ticket.ticket_number,
+      oggetto: ticket.subject,
+      stato: STATI[ticket.status] || ticket.status,
+      priorita: PRIORITA[ticket.priority] || ticket.priority,
+      canale: CANALI[ticket.channel] || ticket.channel,
+      condominio: ticket.condominio_nome,
+      richiedente: ticket.requester_name,
+      recapito: ticket.requester_email || ticket.requester_phone,
+      assegnatario: ticket.assignee_name,
+      fornitore: ticket.supplier_name,
+      aperta: dataOra(ticket.created_at),
+      aggiornata: dataOra(ticket.updated_at),
+      descrizione: ticket.description,
+      messaggi: messaggi.map((m) => ({
+        autore: m.author_name,
+        quando: dataOra(m.created_at),
+        testo: m.message,
+        interno: !!m.is_internal,
+        staff: m.author_role !== "utente"
+      })),
+      storico: (ticket.history || []).map((v) => ({
+        quando: dataOra(v.created_at),
+        descrizione: v.description || v.action,
+        chi: v.actor_name
+      }))
+    });
+
+    if (!esito.ok) { toast(esito.errore || "Stampa non riuscita.", "errore"); return; }
+    if (esito.dati && esito.dati.annullato) return;
+    toast("PDF salvato.", "ok");
+    if (esito.dati && esito.dati.percorso) window.studio.apriStampa(esito.dati.percorso);
+  }
+
   /* --- Disegno ------------------------------------------------------------ */
 
   function disegna() {
     svuota(radice);
+
+    // La linguetta della scheda nasce con il solo numero — e tutto quello che
+    // si sa prima di caricare. Adesso che c'e anche l'oggetto, ci va quello:
+    // otto schede aperte che dicono "Pratica 1204" non aiutano nessuno.
+    if (typeof ctx.rinominaScheda === "function") {
+      ctx.rinominaScheda(`${ticket.ticket_number} · ${ticket.subject}`);
+    }
 
     radice.appendChild(el("div", { class: "scheda-testa" }, [
       el("button", { class: "bottone", text: "‹ Torna alla coda", onclick: () => ctx.naviga("coda") }),
@@ -67,7 +117,26 @@ export default async function monta(radice, ctx) {
           el("span", { text: `Aperta ${dataOra(ticket.created_at)}` }),
           el("span", { text: `Ultimo aggiornamento ${daQuando(ticket.updated_at)}` })
         ])
-      ])
+      ]),
+      el("span", { class: "spazio" }),
+
+      // Due gesti che finora si facevano fuori dall'app: ricordarsi di
+      // richiamare qualcuno, e mettere la pratica su carta per il preventivo,
+      // l'assemblea o il legale.
+      el("button", {
+        class: "bottone", text: "Promemoria",
+        title: "Prendi un promemoria collegato a questa pratica",
+        onclick: () => ctx.promemoria({
+          titolo: `Ripassare ${ticket.ticket_number}: ${ticket.subject}`,
+          destinazione: `ticket:${ticketId}`,
+          contesto: `${ticket.ticket_number} · ${ticket.subject}`
+        })
+      }),
+      el("button", {
+        class: "bottone", text: "Stampa in PDF",
+        title: "La pratica su carta intestata dello Studio",
+        onclick: stampaPratica
+      })
     ]));
 
     const colonnaSinistra = el("div", { class: "colonna-principale" });
