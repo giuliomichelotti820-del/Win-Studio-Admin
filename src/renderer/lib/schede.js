@@ -79,8 +79,24 @@ export function creaSchede({ naviga, impostazioni, salva }) {
 
   async function vaiA(destinazione) {
     if (destinazione === attiva) return;
-    if (bloccoUscita && !(await bloccoUscita(destinazione))) return;
+    // La domanda sul lavoro non salvato la fa `naviga`, che e l'unica strada
+    // per cambiare vista: farla anche qui significherebbe chiederla due volte
+    // a chi cambia scheda, e non chiederla affatto a chi usa la barra
+    // laterale, il comando rapido o Alt+←.
     naviga(destinazione);
+  }
+
+  /**
+   * Si puo lasciare la vista corrente?
+   *
+   * Chiamata dalla navigazione prima di smontare qualunque vista. Senza
+   * risposta negativa possibile, `trattieni` sarebbe una promessa che il
+   * programma non mantiene.
+   */
+  async function puoLasciare(destinazione) {
+    if (!bloccoUscita) return true;
+    if (destinazione === attiva) return true;
+    return !!(await bloccoUscita(destinazione));
   }
 
   function chiudi(destinazione) {
@@ -139,9 +155,67 @@ export function creaSchede({ naviga, impostazioni, salva }) {
     return () => { if (bloccoUscita === domanda) bloccoUscita = null; };
   }
 
+  /* --- Menu del tasto destro -----------------------------------------------
+   * Il tasto destro su una linguetta e il gesto che tutti provano, in ogni
+   * programma a schede: senza, «chiudi le altre» e «fissa» restavano
+   * raggiungibili solo da chi conosceva il doppio clic — cioe nessuno.
+   * ---------------------------------------------------------------------- */
+
+  let menuAperto = null;
+
+  function chiudiMenu() {
+    if (!menuAperto) return;
+    menuAperto.remove();
+    menuAperto = null;
+    document.removeEventListener("mousedown", fuoriDalMenu, true);
+    document.removeEventListener("keydown", tastoNelMenu, true);
+  }
+
+  function fuoriDalMenu(evento) {
+    if (menuAperto && !menuAperto.contains(evento.target)) chiudiMenu();
+  }
+
+  function tastoNelMenu(evento) {
+    if (evento.key === "Escape") { evento.preventDefault(); evento.stopPropagation(); chiudiMenu(); }
+  }
+
+  function apriMenu(scheda, x, y) {
+    chiudiMenu();
+
+    const voce = (testo, azione, spenta = false) => el("button", {
+      class: "voce-contestuale", text: testo, disabled: spenta,
+      onclick: () => { chiudiMenu(); azione(); }
+    });
+
+    const altre = aperte.filter((s) => s.destinazione !== scheda.destinazione && !s.fissata).length;
+
+    menuAperto = el("div", { class: "menu-contestuale", role: "menu" }, [
+      voce("Apri", () => vaiA(scheda.destinazione)),
+      el("div", { class: "divisore-contestuale" }),
+      voce(scheda.fissata ? "Libera la scheda" : "Fissa la scheda", () => fissa(scheda.destinazione)),
+      el("div", { class: "divisore-contestuale" }),
+      voce("Chiudi", () => chiudi(scheda.destinazione)),
+      voce(altre ? `Chiudi le altre (${altre})` : "Chiudi le altre", () => chiudiAltre(scheda.destinazione), !altre),
+      voce("Chiudi tutte", chiudiTutte)
+    ]);
+
+    // Fuori schermo il menu non si legge: si aggancia al bordo. La misura si
+    // puo prendere solo dopo averlo messo in pagina.
+    document.body.appendChild(menuAperto);
+    const misura = menuAperto.getBoundingClientRect();
+    menuAperto.style.left = `${Math.max(4, Math.min(x, window.innerWidth - misura.width - 4))}px`;
+    menuAperto.style.top = `${Math.max(4, Math.min(y, window.innerHeight - misura.height - 4))}px`;
+
+    document.addEventListener("mousedown", fuoriDalMenu, true);
+    document.addEventListener("keydown", tastoNelMenu, true);
+    const primo = menuAperto.querySelector("button:not([disabled])");
+    if (primo) primo.focus();
+  }
+
   /* --- Disegno ------------------------------------------------------------ */
 
   function disegna() {
+    chiudiMenu();
     svuota(nastro);
     // Con una scheda sola il nastro e solo una riga di pixel sprecata.
     nodo.classList.toggle("nascosta", aperte.length < 2);
@@ -156,7 +230,8 @@ export function creaSchede({ naviga, impostazioni, salva }) {
         // Il tasto centrale chiude, come ovunque: chi lo sa lo usa, chi non lo
         // sa non se ne accorge.
         onauxclick: (evento) => { if (evento.button === 1) { evento.preventDefault(); chiudi(scheda.destinazione); } },
-        ondblclick: () => fissa(scheda.destinazione)
+        ondblclick: () => fissa(scheda.destinazione),
+        oncontextmenu: (evento) => { evento.preventDefault(); apriMenu(scheda, evento.clientX, evento.clientY); }
       }, [
         el("button", {
           class: "scheda-lavoro-apri",
@@ -185,6 +260,7 @@ export function creaSchede({ naviga, impostazioni, salva }) {
     );
   }
 
-  return { nodo, segna, chiudi, chiudiAltre, chiudiTutte, fissa, scorri, ripristina, trattieni,
-    get aperte() { return aperte.slice(); } };
+  return { nodo, segna, chiudi, chiudiAltre, chiudiTutte, fissa, scorri, ripristina, trattieni, puoLasciare,
+    get aperte() { return aperte.slice(); },
+    get attiva() { return attiva; } };
 }

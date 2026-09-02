@@ -9,7 +9,7 @@
 
 import {
   el, svuota, api, cached, toast, dataOra, daQuando, pastigliaStato, pastigliaPriorita,
-  STATI, PRIORITA, CANALI, statoVuoto, caricamento
+  STATI, PRIORITA, CANALI, statoVuoto, caricamento, conferma
 } from "../lib/ui.js";
 
 const ORDINE_STATI = ["nuova", "presa_in_carico", "in_lavorazione", "in_attesa", "risolta", "chiusa"];
@@ -20,6 +20,12 @@ export default async function monta(radice, ctx) {
 
   let ticket = null;
   let messaggi = [];
+
+  // `disegna()` ricostruisce la vista a ogni ricarica, e con essa la casella
+  // della risposta: la trattenuta registrata dal disegno precedente parla di
+  // una casella che non esiste piu e va rilasciata prima di registrarne una
+  // nuova, altrimenti la domanda finirebbe per guardare un elemento morto.
+  let liberaTrattenuta = null;
 
   const [staff, categorie, fornitori] = await Promise.all([
     cached("staff", () => api.get("/api/staff")).catch(() => []),
@@ -67,9 +73,14 @@ export default async function monta(radice, ctx) {
       priorita: PRIORITA[ticket.priority] || ticket.priority,
       canale: CANALI[ticket.channel] || ticket.channel,
       condominio: ticket.condominio_nome,
-      richiedente: ticket.requester_name,
-      recapito: ticket.requester_email || ticket.requester_phone,
-      assegnatario: ticket.assignee_name,
+      // Gli stessi campi che la scheda mostra a schermo. Prima qui c'erano
+      // `requester_name`, `requester_email` e `assignee_name`, che l'API non ha
+      // mai restituito: sul foglio stampato — quello che finisce al legale o in
+      // assemblea — le righe «Richiedente», «Recapito» e «Assegnatario»
+      // uscivano vuote, e nessuno le collegava a un errore del programma.
+      richiedente: ticket.client_name || ticket.contact_name,
+      recapito: ticket.client_email || ticket.contact_email || ticket.contact_phone,
+      assegnatario: ticket.assigned_name,
       fornitore: ticket.supplier_name,
       aperta: dataOra(ticket.created_at),
       aggiornata: dataOra(ticket.updated_at),
@@ -81,10 +92,13 @@ export default async function monta(radice, ctx) {
         interno: !!m.is_internal,
         staff: m.author_role !== "utente"
       })),
+      // Lo storico e fatto di passaggi di stato, non di azioni generiche: le
+      // colonne sono old_status/new_status/changed_by_name, le stesse che
+      // l'elenco «Storico stati» disegna qui sotto.
       storico: (ticket.history || []).map((v) => ({
         quando: dataOra(v.created_at),
-        descrizione: v.description || v.action,
-        chi: v.actor_name
+        descrizione: `${STATI[v.old_status] || v.old_status || "—"} → ${STATI[v.new_status] || v.new_status}${v.note ? ` · ${v.note}` : ""}`,
+        chi: v.changed_by_name
       }))
     });
 
@@ -97,6 +111,7 @@ export default async function monta(radice, ctx) {
   /* --- Disegno ------------------------------------------------------------ */
 
   function disegna() {
+    if (liberaTrattenuta) { liberaTrattenuta(); liberaTrattenuta = null; }
     svuota(radice);
 
     // La linguetta della scheda nasce con il solo numero — e tutto quello che
@@ -180,6 +195,25 @@ export default async function monta(radice, ctx) {
       placeholder: "Rispondi al condomino…  (Ctrl+Invio invia · Ctrl+Maiusc+Invio salva come nota interna)"
     });
 
+    /* --- La risposta scritta a meta -----------------------------------------
+     * Una risposta al condomino lunga dieci righe, e un clic sulla barra
+     * laterale per andare a controllare il DURC del fornitore: senza questa
+     * domanda il testo spariva senza dire niente, e a nessuno veniva in mente
+     * che fosse colpa del programma. Il guscio la fa prima di smontare la
+     * vista, da qualunque strada arrivi il cambio — linguette, menu, comando
+     * rapido, Alt+←.
+     * ------------------------------------------------------------------- */
+    if (typeof ctx.trattieniScheda === "function") {
+      liberaTrattenuta = ctx.trattieniScheda(async () => {
+        if (!testoRisposta.value.trim()) return true;
+        return conferma(
+          "La risposta che stai scrivendo non e stata inviata. Uscendo adesso il testo va perso.",
+          "Lasciare la segnalazione?",
+          { si: "Esci e perdi il testo", no: "Resta qui", pericolosa: true }
+        );
+      });
+    }
+
     async function invia(interna) {
       const testo = testoRisposta.value.trim();
       if (!testo) return;
@@ -251,14 +285,18 @@ export default async function monta(radice, ctx) {
     colonnaDestra.appendChild(el("section", { class: "riquadro" }, [
       el("h2", { text: "Lavorazione" }),
       selettore("Priorita", Object.entries(PRIORITA), ticket.priority, (v) => aggiorna({ priority: v })),
+      // Le tendine partono dall'identificativo che l'API restituisce, non piu
+      // dal nome: due colleghi omonimi, un fornitore rinominato o una persona
+      // che si sposa bastavano a far comparire «Nessuno» su una pratica che
+      // invece era assegnata — e a riassegnarla per sbaglio al primo salvataggio.
       selettore("Assegnata a", [[null, "Nessuno"], ...staff.map((s) => [s.id, s.full_name])],
-        (staff.find((s) => s.full_name === ticket.assigned_name) || {}).id,
+        ticket.assigned_to,
         (v) => aggiorna({ assignedTo: v ? Number(v) : null })),
       selettore("Categoria", categorie.map((c) => [c.id, c.label]),
-        (categorie.find((c) => c.slug === ticket.category_slug) || {}).id,
+        ticket.category_id,
         (v) => aggiorna({ categoryId: Number(v) })),
       selettore("Fornitore", [[null, "Nessuno"], ...fornitori.map((f) => [f.id, f.name])],
-        (fornitori.find((f) => f.name === ticket.supplier_name) || {}).id,
+        ticket.supplier_id,
         (v) => aggiorna({ supplierId: v ? Number(v) : null })),
       el("button", {
         class: "bottone largo", text: "Assegna a me",
@@ -310,5 +348,8 @@ export default async function monta(radice, ctx) {
   document.addEventListener("keydown", suTasto);
   await carica();
 
-  return () => document.removeEventListener("keydown", suTasto);
+  return () => {
+    document.removeEventListener("keydown", suTasto);
+    if (liberaTrattenuta) { liberaTrattenuta(); liberaTrattenuta = null; }
+  };
 }

@@ -1445,6 +1445,27 @@ kbd {
 .scheda-lavoro-chiudi:hover { background: var(--errore-velo); color: var(--errore); }
 /* Una scheda fissata mostra una spunta al posto della croce: si vede che c'e
    e si capisce che non e li per essere chiusa in fretta. */
+/* --- Menu del tasto destro sulle linguette ---------------------------------
+   Compatto e squadrato come i menu contestuali di Windows: qui non serve
+   nessuna personalita, serve che si riconosca per quello che e. */
+
+.menu-contestuale {
+  position: fixed; z-index: 70; min-width: 210px; padding: 4px;
+  background: var(--sfondo-2);
+  border: 1px solid var(--bordo-forte); border-radius: var(--raggio);
+  box-shadow: var(--ombra-3);
+  animation: entra-finestra .1s ease-out;
+}
+.voce-contestuale {
+  display: block; width: 100%; text-align: left;
+  background: none; border: 0; color: var(--testo); font: inherit;
+  padding: 7px 10px; border-radius: 5px; cursor: pointer;
+}
+.voce-contestuale:hover:not(:disabled),
+.voce-contestuale:focus-visible { background: var(--sfondo-3); outline: none; }
+.voce-contestuale:disabled { color: var(--testo-tenue); cursor: default; }
+.divisore-contestuale { height: 1px; margin: 4px 6px; background: var(--bordo); }
+
 .scheda-lavoro.fissata { min-width: 0; }
 .scheda-lavoro.fissata .scheda-lavoro-chiudi { color: var(--ok); }
 .scheda-lavoro.fissata .scheda-lavoro-testo { max-width: 88px; }

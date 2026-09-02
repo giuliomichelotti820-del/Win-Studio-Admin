@@ -242,6 +242,12 @@ export default async function monta(radice, ctx) {
     if (f.channel) p.set("channel", f.channel);
     if (f.condominioId) p.set("condominioId", f.condominioId);
     if (f.q) p.set("q", f.q);
+    // L'assegnazione la taglia il server (assignedTo=id oppure "none"): fatta
+    // qui sui dati gia scaricati filtrava la sola pagina corrente, lasciando
+    // il conteggio e la paginazione a raccontare un'altra storia — tre righe a
+    // schermo sotto la scritta «412 segnalazioni, pagina 1 di 9».
+    if (f.assegnate === "mie") p.set("assignedTo", String(ctx.utente.id));
+    else if (f.assegnate === "nessuno") p.set("assignedTo", "none");
     p.set("sortBy", f.sortBy);
     p.set("sortDir", f.sortDir);
     p.set("page", String(f.page));
@@ -255,15 +261,7 @@ export default async function monta(radice, ctx) {
     if (!silenzioso) svuota(corpo).appendChild(caricamento("Carico la coda…"));
     try {
       const dati = await api.get(`/api/tickets?${queryString()}`);
-      let elenco = dati.tickets || [];
-
-      // L'API non filtra per assegnatario: e un taglio che serve solo qui e si
-      // fa sui dati gia scaricati, senza un giro di rete in piu.
-      if (stato.filtri.assegnate === "mie") {
-        elenco = elenco.filter((t) => t.assigned_name === ctx.utente.fullName);
-      } else if (stato.filtri.assegnate === "nessuno") {
-        elenco = elenco.filter((t) => !t.assigned_name);
-      }
+      const elenco = dati.tickets || [];
 
       stato.tickets = elenco;
       stato.totale = dati.total || elenco.length;

@@ -420,15 +420,19 @@ const CAPITOLI = [
       h("Fissare una linguetta"),
       p("Doppio clic su una linguetta la fissa: si sposta in testa al nastro e resta anche quando chiudi tutto il resto. Serve alla pratica che stai seguendo da giorni, quella che non vuoi ritrovarti a cercare ogni mattina."),
 
+      h("Il tasto destro"),
+      p("Il tasto destro su una linguetta apre il suo menu: aprila, fissala, chiudila, oppure chiudi tutte le altre e resta con quella sola. E l'ultima cosa utile quando il nastro si e riempito e stai per rimettere mano a una pratica sola."),
+
       tasti(
         ["Ctrl + Tab", "Scheda seguente"],
         ["Ctrl + Maiusc + Tab", "Scheda precedente"],
         ["Ctrl + W", "Chiudi la scheda su cui stai lavorando"],
+        ["Tasto destro", "Menu della linguetta: apri, fissa, chiudi, chiudi le altre"],
         ["Tasto centrale", "Chiudi la linguetta sotto il puntatore"],
         ["Doppio clic", "Fissa o libera la linguetta"]
       ),
 
-      nota("Una scheda conserva il posto, non lo stato della pagina: tornandoci, i dati vengono richiesti di nuovo al server. E un bene — quello che leggi e sempre fresco — ma un modulo lasciato a meta non si ritrova. Le viste con del testo in lavorazione te lo chiedono prima di lasciarti cambiare scheda.")
+      nota("Una scheda conserva il posto, non lo stato della pagina: tornandoci, i dati vengono richiesti di nuovo al server. E un bene — quello che leggi e sempre fresco — ma un modulo lasciato a meta non si ritrova. Fa eccezione la risposta al condomino: se ne hai una scritta a meta, l'applicazione te lo chiede prima di lasciarti andare altrove, da qualunque parte tu stia andando — un'altra linguetta, la barra laterale, il comando rapido o Alt+freccia.")
     ]
   },
 

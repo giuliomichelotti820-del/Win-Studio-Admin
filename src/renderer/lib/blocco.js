@@ -31,6 +31,17 @@ let sorveglianza = null;
 // impilerebbero due schermate di blocco.
 let inApertura = false;
 
+/* Chi aspetta lo sblocco del velo attualmente a schermo.
+ *
+ * Serve al caso che sembra impossibile e capita tutti i giorni: si blocca a
+ * mano con Ctrl+L, si va a pranzo, e nel frattempo scade anche il timer
+ * dell'inattivita. La seconda chiamata trovava il velo gia in pagina e tornava
+ * indietro senza dire niente — cosi la sorveglianza restava con `bloccato`
+ * acceso per sempre e, da quel momento in poi, la postazione non si bloccava
+ * piu da sola. Adesso chi arriva secondo si mette in coda qui e viene avvisato
+ * insieme a tutti gli altri quando il velo si apre. */
+let inAttesaDiSblocco = [];
+
 /**
  * Avvia (o riavvia) la sorveglianza.
  * @param {object} opzioni
@@ -79,6 +90,7 @@ export function bloccaOra(utente) {
 }
 
 async function mostraBlocco(utente, sbloccato) {
+  if (typeof sbloccato === "function") inAttesaDiSblocco.push(sbloccato);
   if (inApertura || document.querySelector(".blocco")) return;
   inApertura = true;
 
@@ -104,7 +116,7 @@ async function mostraBlocco(utente, sbloccato) {
       errore,
       el("button", {
         class: "bottone largo pericolo", text: "Esci dall'account",
-        onclick: async () => { inApertura = false; await window.studio.logout(); location.reload(); }
+        onclick: async () => { inApertura = false; inAttesaDiSblocco = []; await window.studio.logout(); location.reload(); }
       })
     ])
   ]);
@@ -115,7 +127,14 @@ async function mostraBlocco(utente, sbloccato) {
     inApertura = false;
     velo.remove();
     document.removeEventListener("keydown", intrappola, true);
-    sbloccato();
+    // Si svuota la coda prima di richiamarla: una sorveglianza che si riarma
+    // dentro la propria callback non deve ritrovarsi in un elenco che sta
+    // ancora scorrendo.
+    const inCoda = inAttesaDiSblocco;
+    inAttesaDiSblocco = [];
+    for (const avvisa of inCoda) {
+      try { avvisa(); } catch (errore) { console.error(errore); }
+    }
   }
 
   /* --- Sblocco con il PIN ------------------------------------------------- */
@@ -245,5 +264,4 @@ async function mostraBlocco(utente, sbloccato) {
   else pannelloPassword();
 
   window.studio.annota({ azione: "blocco-postazione" });
-  return () => svuota(velo);
 }
