@@ -456,6 +456,14 @@ function evidenziaMenu(idSezione) {
 }
 
 async function naviga(destinazione, parametri = {}) {
+  // Prima di smontare qualunque cosa: la vista corrente puo avere del testo
+  // non salvato — la risposta al condomino scritta a meta e la piu cara — e
+  // averlo dichiarato con `ctx.trattieniScheda`. Il controllo sta qui e non
+  // nel nastro delle schede perche `naviga` e l'unica strada per cambiare
+  // vista: la barra laterale, il comando rapido, Alt+←, il collegamento
+  // `winstudio://` e le linguette passano tutti di qua.
+  if (schede && !(await schede.puoLasciare(destinazione))) return;
+
   if (typeof smontaVista === "function") {
     try { smontaVista(); } catch (errore) { console.error(errore); }
     smontaVista = null;
@@ -822,11 +830,16 @@ function apriPalette() {
     document.removeEventListener("keydown", suTasto, true);
   }
 
+  // Ogni tasto che il comando rapido usa va anche fermato: intercettato ma
+  // lasciato correre, Invio apriva insieme il risultato scelto qui *e* la
+  // pratica selezionata nella coda sotto, e le frecce muovevano due elenchi
+  // alla volta.
   function suTasto(evento) {
-    if (evento.key === "Escape") { evento.stopPropagation(); chiudi(); }
-    else if (evento.key === "ArrowDown") { evento.preventDefault(); indice = Math.min(voci.length - 1, indice + 1); disegna(); }
-    else if (evento.key === "ArrowUp") { evento.preventDefault(); indice = Math.max(0, indice - 1); disegna(); }
-    else if (evento.key === "Enter" && voci[indice]) { evento.preventDefault(); chiudi(); voci[indice].azione(); }
+    if (evento.key === "Escape") { evento.preventDefault(); evento.stopPropagation(); chiudi(); }
+    else if (evento.key === "ArrowDown") { evento.preventDefault(); evento.stopPropagation(); indice = Math.min(voci.length - 1, indice + 1); disegna(); }
+    else if (evento.key === "ArrowUp") { evento.preventDefault(); evento.stopPropagation(); indice = Math.max(0, indice - 1); disegna(); }
+    else if (evento.key === "Enter" && voci[indice]) { evento.preventDefault(); evento.stopPropagation(); chiudi(); voci[indice].azione(); }
+    else if (evento.key === "Home" || evento.key === "End" || evento.key === "Tab") evento.stopPropagation();
   }
 
   campo.addEventListener("input", () => filtra(campo.value));
@@ -909,7 +922,9 @@ function scorciatoieGlobali() {
 
       "scheda-avanti": () => schede && schede.scorri(1),
       "scheda-indietro": () => schede && schede.scorri(-1),
-      "scheda-chiudi": () => schede && schede.chiudi(cronologia.voci[cronologia.cursore])
+      // La scheda su cui si sta lavorando la conosce il nastro: la cronologia
+      // e un'altra cosa e dopo un Alt+← non punta piu alla linguetta accesa.
+      "scheda-chiudi": () => schede && schede.chiudi(schede.attiva)
     },
 
     vaiA: (idSezione) => naviga(idSezione),

@@ -72,7 +72,8 @@ export const SCORCIATOIE = [
   { id: "scheda-indietro", combo: "ctrl+shift+tab", gruppo: "Schede di lavoro", tasti: "Ctrl + Shift + Tab", descrizione: "Passa alla scheda precedente" },
   { id: "scheda-chiudi", combo: "ctrl+w", gruppo: "Schede di lavoro", tasti: "Ctrl + W", descrizione: "Chiudi la scheda su cui stai lavorando" },
   { id: "scheda-fissa", combo: null, gruppo: "Schede di lavoro", tasti: "Doppio clic", descrizione: "Fissa una linguetta: resta anche quando chiudi tutto il resto" },
-  { id: "scheda-chiudi-mouse", combo: null, gruppo: "Schede di lavoro", tasti: "Tasto centrale", descrizione: "Chiudi la linguetta sotto il puntatore" }
+  { id: "scheda-chiudi-mouse", combo: null, gruppo: "Schede di lavoro", tasti: "Tasto centrale", descrizione: "Chiudi la linguetta sotto il puntatore" },
+  { id: "scheda-menu", combo: null, gruppo: "Schede di lavoro", tasti: "Tasto destro", descrizione: "Menu della linguetta: apri, fissa, chiudi, chiudi le altre" }
 ];
 
 /* --- La famiglia «vai a» --------------------------------------------------
