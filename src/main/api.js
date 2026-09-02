@@ -221,4 +221,43 @@ async function me() {
   return chiamata("GET", "/api/auth/me");
 }
 
-module.exports = { ApiError, richiesta, chiamata, login, verificaOtp, reinviaOtp, logout, me, USER_AGENT };
+/* --- Risposte non JSON ---------------------------------------------------
+ * Allegati da scaricare e documenti da caricare: il corpo non e JSON, quindi
+ * non passa da `chiamata`, ma tutto il resto deve restare identico. Prima
+ * queste due strade si ricostruivano a mano l'indirizzo, lo User-Agent e le
+ * intestazioni di sessione — e siccome la sessione del Worker e legata
+ * all'hash dello User-Agent, bastava una divergenza fra qui e li per far
+ * scadere il token a meta scaricamento senza che nessuno capisse perche.
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Come `chiamata`, ma restituisce la Response grezza.
+ * @returns {Promise<Response>}
+ */
+async function grezza(metodo, percorso, { body, headers, timeoutMs = 120000 } = {}) {
+  const controller = new AbortController();
+  const scadenza = setTimeout(() => controller.abort(), timeoutMs);
+  let risposta;
+  try {
+    risposta = await fetch(`${baseUrl()}${percorso}`, {
+      method: metodo,
+      headers: intestazioni(headers),
+      body,
+      signal: controller.signal
+    });
+  } catch (errore) {
+    clearTimeout(scadenza);
+    if (errore.name === "AbortError") throw new ApiError("Il server non ha risposto in tempo.", 0);
+    throw new ApiError("Server non raggiungibile. Controlla la connessione.", 0);
+  }
+  clearTimeout(scadenza);
+
+  if (!risposta.ok) {
+    const dati = await leggiCorpo(risposta);
+    const messaggio = (dati && (dati.error || dati.message)) || `Errore ${risposta.status}.`;
+    throw new ApiError(messaggio, risposta.status, dati);
+  }
+  return risposta;
+}
+
+module.exports = { ApiError, richiesta, chiamata, grezza, login, verificaOtp, reinviaOtp, logout, me, USER_AGENT };

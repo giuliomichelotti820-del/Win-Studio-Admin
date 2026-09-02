@@ -387,13 +387,7 @@ async function controllaNotifiche() {
       avviso.show();
     }
   } catch (errore) {
-    if (errore.status === 401) {
-      store.salvaSessione(null, null);
-      clearInterval(timerNotifiche);
-      timerNotifiche = null;
-      ultimaNotificaVista = 0;
-      invia("app:sessione-scaduta");
-    }
+    if (errore.status === 401) sessioneCaduta();
   }
 }
 
@@ -406,10 +400,46 @@ function avviaPolling() {
 
 /* --- IPC ----------------------------------------------------------------- */
 
+/**
+ * Sessione caduta: si chiude qui, una volta sola, da qualunque strada arrivi
+ * il 401 — il controllo delle notifiche, una richiesta della pagina, uno
+ * scaricamento. Prima lo riconosceva solo il polling: un allegato scaricato
+ * con il token scaduto rispondeva «Scaricamento non riuscito (401)» e l'app
+ * restava li a fingere di essere collegata fino al giro successivo.
+ */
+function sessioneCaduta() {
+  store.salvaSessione(null, null);
+  clearInterval(timerNotifiche);
+  timerNotifiche = null;
+  ultimaNotificaVista = 0;
+  if (tray) tray.setToolTip("Win Studio Admin");
+  invia("app:sessione-scaduta");
+}
+
 function risultato(promessa) {
   return promessa.then(
     (dati) => ({ ok: true, dati }),
     (errore) => ({ ok: false, errore: errore.message || "Errore imprevisto.", stato: errore.status || 0 })
+  );
+}
+
+/**
+ * Come `risultato`, ma per le chiamate che viaggiano con il token di sessione:
+ * li un 401 significa che il token non vale piu, e va trattato come tale.
+ *
+ * Non vale per tutto, e la distinzione conta: sbloccare la postazione e
+ * impostare il PIN verificano la password ricontattando /api/auth/login, che a
+ * una password sbagliata risponde anch'esso 401. Trattare quel 401 come una
+ * sessione caduta butterebbe fuori dall'applicazione chi ha solo digitato male
+ * la password — esattamente il momento in cui non deve succedere.
+ */
+function risultatoSessione(promessa) {
+  return promessa.then(
+    (dati) => ({ ok: true, dati }),
+    (errore) => {
+      if (errore.status === 401 && store.getSessione().token) sessioneCaduta();
+      return { ok: false, errore: errore.message || "Errore imprevisto.", stato: errore.status || 0 };
+    }
   );
 }
 
@@ -538,7 +568,7 @@ ipcMain.handle("pin:rimuovi", () => risultato(Promise.resolve((() => {
   return sessione.user ? pin.stato(sessione.user, sessione.deviceId) : null;
 })())));
 
-ipcMain.handle("api:richiesta", (_e, { metodo, percorso, corpo }) => risultato(api.richiesta(metodo, percorso, corpo)));
+ipcMain.handle("api:richiesta", (_e, { metodo, percorso, corpo }) => risultatoSessione(api.richiesta(metodo, percorso, corpo)));
 
 ipcMain.handle("settings:set", (_e, parziali) => {
   const aggiornate = store.setImpostazioni(parziali);
@@ -550,23 +580,14 @@ ipcMain.handle("app:notifiche-ora", () => risultato(controllaNotifiche()));
 
 // Scaricamento allegati e documenti: il file viaggia nel processo principale,
 // il renderer riceve solo il percorso dove e stato salvato.
-ipcMain.handle("api:scarica", (_e, { percorso, nomeFile }) => risultato((async () => {
+ipcMain.handle("api:scarica", (_e, { percorso, nomeFile }) => risultatoSessione((async () => {
   const scelta = await dialog.showSaveDialog(finestra, {
     defaultPath: path.join(app.getPath("downloads"), nomeFile || "allegato"),
     title: "Salva il file"
   });
   if (scelta.canceled || !scelta.filePath) return null;
 
-  const impostazioni = store.getImpostazioni();
-  const sessione = store.getSessione();
-  const risposta = await fetch(`${String(impostazioni.baseUrl).replace(/\/+$/, "")}${percorso}`, {
-    headers: {
-      "User-Agent": api.USER_AGENT,
-      Authorization: `Bearer ${sessione.token}`,
-      "X-Device-Id": sessione.deviceId
-    }
-  });
-  if (!risposta.ok) throw new Error(`Scaricamento non riuscito (${risposta.status}).`);
+  const risposta = await api.grezza("GET", percorso);
   fs.writeFileSync(scelta.filePath, Buffer.from(await risposta.arrayBuffer()));
   return scelta.filePath;
 })()));
@@ -864,7 +885,7 @@ ipcMain.handle("archivio:apri-allegato", (_e, percorso) => shell.openPath(percor
 
 // Caricamento di un documento condominiale sul server (bucket R2 dello
 // Studio): e l'unica chiamata multipart dell'app, il resto e JSON.
-ipcMain.handle("documenti:carica", (_e, { condominioId, categoria, titolo, nota }) => risultato((async () => {
+ipcMain.handle("documenti:carica", (_e, { condominioId, categoria, titolo, nota }) => risultatoSessione((async () => {
   const scelta = await dialog.showOpenDialog(finestra, {
     title: "Scegli il documento da caricare",
     properties: ["openFile"],
@@ -894,20 +915,8 @@ ipcMain.handle("documenti:carica", (_e, { condominioId, categoria, titolo, nota 
   if (nota) modulo.set("note", nota);
   modulo.set("file", new Blob([contenuto], { type: tipo }), path.basename(percorsoFile));
 
-  const impostazioni = store.getImpostazioni();
-  const sessione = store.getSessione();
-  const risposta = await fetch(`${String(impostazioni.baseUrl).replace(/\/+$/, "")}/api/documents`, {
-    method: "POST",
-    headers: {
-      "User-Agent": api.USER_AGENT,
-      Authorization: `Bearer ${sessione.token}`,
-      "X-Device-Id": sessione.deviceId
-    },
-    body: modulo
-  });
-  const dati = await risposta.json().catch(() => null);
-  if (!risposta.ok) throw new Error((dati && dati.error) || `Caricamento non riuscito (${risposta.status}).`);
-  return dati;
+  const risposta = await api.grezza("POST", "/api/documents", { body: modulo });
+  return risposta.json().catch(() => null);
 })()));
 
 /* --- Ciclo di vita ------------------------------------------------------- */
